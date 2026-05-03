@@ -71,11 +71,16 @@ def load_luffy(textures: TextureCache) -> GpuMesh:
 
 
 def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
+    bitcoin_texture = (
+        ASSET_ROOT
+        / "lado_externo/bitcoin/textures/golden-concrete-foil-paper-texture_1249-354.avif"
+    )
     return load_obj_mesh(
         "Bitcoin pile",
         ASSET_ROOT / "lado_externo/bitcoin/source/coins.obj",
         textures,
-        fallback_diffuse=(1.0, 0.72, 0.18),
+        fallback_texture=textures.from_file(bitcoin_texture),
+        force_white_diffuse_when_textured=True,
     )
 
 
@@ -92,11 +97,16 @@ def load_chaves(textures: TextureCache) -> GpuMesh:
 
 
 def load_barrel(textures: TextureCache) -> GpuMesh:
+    barrel_texture = (
+        ASSET_ROOT
+        / "lado_externo/barril/textures/texture-wooden-barrel-background-closeup-600nw-2315911823.webp"
+    )
     return load_obj_mesh(
         "Barrel",
         ASSET_ROOT / "lado_externo/barril/source/Barril.obj",
         textures,
-        fallback_diffuse=(0.48, 0.27, 0.12),
+        fallback_texture=textures.from_file(barrel_texture),
+        force_white_diffuse_when_textured=True,
     )
 
 
@@ -115,17 +125,17 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         ),
         static_object(
             luffy,
-            compose_transform((0.0, 11.92, 11.75), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
+            compose_transform((0.0, 11.92, 10.60), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
             "Luffy on prow",
         ),
         static_object(
             bitcoin_pile,
-            compose_transform((0.0, 7.80, -1.25), rotation=(0.0, 20.0, 0.0), object_scale=0.038),
+            compose_transform((0.0, 5.80, -1.25), rotation=(0.0, 20.0, 0.0), object_scale=0.038),
             "Bitcoin pile on deck",
         ),
         static_object(
             chaves,
-            compose_transform((-3.75, 8.10, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.08),
+            compose_transform((-3.75, 7.80, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.08),
             "Chaves on deck",
         ),
         static_object(

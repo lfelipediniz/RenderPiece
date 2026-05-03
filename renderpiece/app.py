@@ -35,7 +35,7 @@ def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int
 
 def process_keyboard(window: glfw._GLFWwindow, camera: Camera, dt: float) -> None:
     velocity = camera.speed * dt
-    if glfw.get_key(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS:
+    if glfw.get_key(window, glfw.KEY_LEFT_CONTROL) == glfw.PRESS:
         velocity *= 2.0
 
     flat_front = normalize(np.array([camera.front[0], 0.0, camera.front[2]], dtype=np.float32))
@@ -51,7 +51,7 @@ def process_keyboard(window: glfw._GLFWwindow, camera: Camera, dt: float) -> Non
         camera.move(flat_right, velocity)
     if glfw.get_key(window, glfw.KEY_SPACE) == glfw.PRESS:
         camera.move(camera.world_up, velocity)
-    if glfw.get_key(window, glfw.KEY_LEFT_CONTROL) == glfw.PRESS:
+    if glfw.get_key(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS:
         camera.move(-camera.world_up, velocity)
 
 

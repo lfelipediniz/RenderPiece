@@ -12,5 +12,5 @@ TERRAIN_Y = 0.0
 SKY_CEILING_Y = 34.0
 DECK_Y = 6.85
 
-IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tga", ".bmp")
+IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".tga", ".bmp", ".webp", ".avif")
 
