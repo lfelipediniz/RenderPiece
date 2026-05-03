@@ -36,6 +36,9 @@ env/
 *.blend1
 *.blend2
 
+# Arquivo muito grande para o GitHub (>100 MB)
+modelos/lado_externo/tangerine_tree/source/model.obj
+
 # Compiled shaders / cache
 *.spv
 __pycache__/
