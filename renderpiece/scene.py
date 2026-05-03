@@ -70,9 +70,42 @@ def load_luffy(textures: TextureCache) -> GpuMesh:
     return luffy
 
 
+def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Bitcoin pile",
+        ASSET_ROOT / "lado_externo/bitcoin/source/coins.obj",
+        textures,
+        fallback_diffuse=(1.0, 0.72, 0.18),
+    )
+
+
+def load_chaves(textures: TextureCache) -> GpuMesh:
+    chaves_texture = ASSET_ROOT / "lado_externo/chaves/textures/Chavo.png"
+    return load_obj_mesh(
+        "Chaves",
+        ASSET_ROOT / "lado_externo/chaves/source/Chavo.obj",
+        textures,
+        fallback_texture=textures.from_file(chaves_texture),
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
+def load_barrel(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Barrel",
+        ASSET_ROOT / "lado_externo/barril/source/Barril.obj",
+        textures,
+        fallback_diffuse=(0.48, 0.27, 0.12),
+    )
+
+
 def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
+    bitcoin_pile = load_bitcoin_pile(textures)
+    chaves = load_chaves(textures)
+    barrel = load_barrel(textures)
 
     return [
         static_object(
@@ -85,5 +118,19 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             compose_transform((0.0, 11.92, 11.75), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
             "Luffy on prow",
         ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.0, 7.80, -1.25), rotation=(0.0, 20.0, 0.0), object_scale=0.038),
+            "Bitcoin pile on deck",
+        ),
+        static_object(
+            chaves,
+            compose_transform((-3.75, 8.10, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.08),
+            "Chaves on deck",
+        ),
+        static_object(
+            barrel,
+            compose_transform((-2.65, 5.90, -3.00), rotation=(0.0, -18.0, 0.0), object_scale=0.011),
+            "Barrel on lower deck",
+        ),
     ]
-

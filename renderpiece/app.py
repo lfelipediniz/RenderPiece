@@ -20,6 +20,7 @@ from OpenGL.GL import (
 from .camera import Camera
 from .config import WINDOW_HEIGHT, WINDOW_WIDTH
 from .math3d import normalize, perspective
+from .overlay import PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .state import Toggles
@@ -81,13 +82,22 @@ def run() -> None:
     window = init_window()
 
     def mouse_callback(_window: glfw._GLFWwindow, xpos: float, ypos: float) -> None:
+        if toggles.paused:
+            return
         camera.process_mouse(xpos, ypos)
 
     def key_callback(window_handle: glfw._GLFWwindow, key: int, _scancode: int, action: int, _mods: int) -> None:
         if action != glfw.PRESS:
             return
         if key == glfw.KEY_ESCAPE:
-            glfw.set_window_should_close(window_handle, True)
+            toggles.paused = not toggles.paused
+            if toggles.paused:
+                glfw.set_input_mode(window_handle, glfw.CURSOR, glfw.CURSOR_NORMAL)
+                print("[input] Paused")
+            else:
+                glfw.set_input_mode(window_handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
+                camera.first_mouse = True
+                print("[input] Unpaused")
         elif key == glfw.KEY_P:
             toggles.wireframe = not toggles.wireframe
             print(f"[input] Wireframe: {toggles.wireframe}")
@@ -104,6 +114,7 @@ def run() -> None:
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
     objects = build_scene(textures)
+    pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
 
     previous_time = glfw.get_time()
     while not glfw.window_should_close(window):
@@ -111,7 +122,8 @@ def run() -> None:
         dt = current_time - previous_time
         previous_time = current_time
 
-        process_keyboard(window, camera, dt)
+        if not toggles.paused:
+            process_keyboard(window, camera, dt)
 
         width, height = glfw.get_framebuffer_size(window)
         aspect = width / max(height, 1)
@@ -127,6 +139,9 @@ def run() -> None:
 
         for scene_object in objects:
             scene_object.mesh.draw(shader, scene_object.model_matrix(current_time), textures.white_texture)
+
+        if toggles.paused:
+            pause_overlay.draw()
 
         glfw.swap_buffers(window)
         glfw.poll_events()
