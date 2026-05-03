@@ -759,6 +759,7 @@ def load_obj_mesh(
 
 def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship_textures = ASSET_ROOT / "navio/textures"
+    luffy_textures = ASSET_ROOT / "lado_externo/luffy/textures"
 
     ship = load_obj_mesh(
         "Going Merry",
@@ -768,6 +769,37 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         force_white_diffuse_when_textured=True,
     )
 
+    luffy = load_obj_mesh(
+        "Luffy",
+        ASSET_ROOT / "lado_externo/luffy/source/Monkey D. Luffy.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+        material_texture_overrides={
+            "24_-Straw_Hat.Hat_Hair_0.2_0_0": luffy_textures / "Scratch.png",
+            "Gum": luffy_textures / "IMG_1670.jpeg",
+            "Gum.001": luffy_textures / "IMG_1671.png",
+            "Lower_shorts": luffy_textures / "IMG_1663.jpeg",
+            "Pupil": luffy_textures / "Scratch.png",
+            "Ribbon": luffy_textures / "IMG_1670.jpeg",
+            "Sandals": luffy_textures / "IMG_0451.jpeg",
+            "Sandals.001": luffy_textures / "IMG_0451.jpeg",
+            "Shirt": luffy_textures / "IMG_1670.jpeg",
+            "Shorts": luffy_textures / "IMG_1663.jpeg",
+            "Straw_hat": luffy_textures / "IMG_1674.jpeg",
+            "Teeth": luffy_textures / "IMG_1671.png",
+            "button": luffy_textures / "IMG_1672.jpeg",
+            "eye": luffy_textures / "IMG_1671.png",
+            "hair": luffy_textures / "Scratch.png",
+            "shock": luffy_textures / "IMG_1671.png",
+            "skin": luffy_textures / "IMG_1662.jpeg",
+            "tongue": luffy_textures / "IMG_1670.jpeg",
+        },
+    )
+    luffy.batches = [
+        batch for batch in luffy.batches if batch.material_name != "Eyebrows_and_scratch"
+    ]
+
     def static_object(mesh: GpuMesh, matrix: np.ndarray, name: str) -> SceneObject:
         return SceneObject(name, mesh, lambda _elapsed, m=matrix: m)
 
@@ -776,7 +808,12 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             ship,
             compose_transform((0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), object_scale=0.01),
             "Ship",
-        )
+        ),
+        static_object(
+            luffy,
+            compose_transform((0.0, 11.92, 11.75), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
+            "Luffy on prow",
+        ),
     ]
 
 
