@@ -96,6 +96,17 @@ def load_chaves(textures: TextureCache) -> GpuMesh:
     )
 
 
+
+def load_brook(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Brook",
+        ASSET_ROOT / "lado_interno/one-piece-brook/source/Brook/Brook.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
 def load_barrel(textures: TextureCache) -> GpuMesh:
     barrel_texture = (
         ASSET_ROOT
@@ -110,12 +121,14 @@ def load_barrel(textures: TextureCache) -> GpuMesh:
     )
 
 
+
 def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     bitcoin_pile = load_bitcoin_pile(textures)
     chaves = load_chaves(textures)
     barrel = load_barrel(textures)
+    brook = load_brook(textures)
 
     return [
         static_object(
@@ -205,12 +218,17 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         ),
         static_object(
             chaves,
-            compose_transform((-3.75, 7.80, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.08),
+            compose_transform((-2.50, 7.80, -4.60), rotation=(0.0, 235.0, 0.0), object_scale=1.08),
             "Chaves on deck",
         ),
         static_object(
             barrel,
             compose_transform((-2.65, 5.90, -3.00), rotation=(0.0, -18.0, 0.0), object_scale=0.011),
             "Barrel on lower deck",
+        ),
+        static_object(
+            brook,
+            compose_transform((-3.75, 7.80, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.0),
+            "Brook next to Chaves",
         ),
     ]
