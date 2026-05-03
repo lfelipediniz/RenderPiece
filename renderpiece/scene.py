@@ -131,7 +131,77 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         static_object(
             bitcoin_pile,
             compose_transform((0.0, 5.80, -1.25), rotation=(0.0, 20.0, 0.0), object_scale=0.038),
-            "Bitcoin pile on deck",
+            "Bitcoin pile 1",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.55, 5.80, -1.50), rotation=(0.0, 75.0, 0.0), object_scale=0.036),
+            "Bitcoin pile 2",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.50, 5.80, -0.90), rotation=(0.0, -40.0, 0.0), object_scale=0.037),
+            "Bitcoin pile 3",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.20, 5.80, -2.00), rotation=(0.0, 130.0, 0.0), object_scale=0.035),
+            "Bitcoin pile 4",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.25, 5.95, -1.30), rotation=(0.0, 55.0, 0.0), object_scale=0.034),
+            "Bitcoin pile 5 (top)",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.80, 5.80, -0.70), rotation=(0.0, 10.0, 0.0), object_scale=0.037),
+            "Bitcoin pile 6",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.80, 5.80, -1.80), rotation=(0.0, 165.0, 0.0), object_scale=0.036),
+            "Bitcoin pile 7",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.40, 5.80, -0.50), rotation=(0.0, -85.0, 0.0), object_scale=0.035),
+            "Bitcoin pile 8",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.10, 5.80, -2.40), rotation=(0.0, 200.0, 0.0), object_scale=0.036),
+            "Bitcoin pile 9",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((1.00, 5.80, -1.80), rotation=(0.0, 45.0, 0.0), object_scale=0.035),
+            "Bitcoin pile 10",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-1.00, 5.80, -0.60), rotation=(0.0, 110.0, 0.0), object_scale=0.036),
+            "Bitcoin pile 11",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.65, 5.95, -1.20), rotation=(0.0, 90.0, 0.0), object_scale=0.033),
+            "Bitcoin pile 12 (top)",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.55, 5.95, -1.70), rotation=(0.0, -20.0, 0.0), object_scale=0.033),
+            "Bitcoin pile 13 (top)",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((0.10, 6.08, -1.40), rotation=(0.0, 35.0, 0.0), object_scale=0.031),
+            "Bitcoin pile 14 (peak)",
+        ),
+        static_object(
+            bitcoin_pile,
+            compose_transform((-0.30, 5.80, -0.30), rotation=(0.0, -60.0, 0.0), object_scale=0.036),
+            "Bitcoin pile 15",
         ),
         static_object(
             chaves,
