@@ -1,0 +1,157 @@
+# Wavefront MTL
+# Created by fragMOTION
+# http://www.fragmosoft.com
+
+newmtl surface_000
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 011.png
+newmtl surface_001
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 000.png
+newmtl surface_002
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 010.png
+newmtl surface_003
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 005.png
+newmtl surface_004
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 004.png
+newmtl surface_005
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 009.png
+newmtl surface_006
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 006.png
+newmtl surface_007
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 008.png
+newmtl surface_008
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 007.png
+newmtl surface_009
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 003.png
+newmtl surface_010
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 002.png
+newmtl surface_011
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 001.png
+newmtl surface_012
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 016.png
+newmtl surface_013
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 012.png
+newmtl surface_014
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 013.png
+newmtl surface_015
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 015.png
+newmtl surface_016
+illum 2
+d 1
+ka 0 0 0
+kd 0.776471 0.776471 0.776471
+ks 0 0 0
+ke 0 0 0
+ns 51.2
+map_kd 014.png
