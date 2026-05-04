@@ -23,6 +23,7 @@ from .math3d import normalize, perspective
 from .overlay import PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
+from .skybox import SkyBox
 from .state import Toggles
 from .textures import TextureCache
 
@@ -114,6 +115,7 @@ def run() -> None:
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
     objects = build_scene(textures)
+    skybox = SkyBox()
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
 
     previous_time = glfw.get_time()
@@ -139,6 +141,8 @@ def run() -> None:
 
         for scene_object in objects:
             scene_object.mesh.draw(shader, scene_object.model_matrix(current_time), textures.white_texture)
+
+        skybox.draw(view, projection)
 
         if toggles.paused:
             pause_overlay.draw()

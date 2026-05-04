@@ -84,13 +84,12 @@ def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
     )
 
 
-def load_chaves(textures: TextureCache) -> GpuMesh:
-    chaves_texture = ASSET_ROOT / "lado_externo/chaves/textures/Chavo.png"
+def load_bed(textures: TextureCache) -> GpuMesh:
+    bed_dir = ASSET_ROOT / "lado_interno/bed-minecraft/source/Bed Minecraft by JDanielHE"
     return load_obj_mesh(
-        "Chaves",
-        ASSET_ROOT / "lado_externo/chaves/source/Chavo.obj",
+        "Bed Minecraft",
+        bed_dir / "Bed.obj",
         textures,
-        fallback_texture=textures.from_file(chaves_texture),
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
     )
@@ -153,7 +152,7 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     bitcoin_pile = load_bitcoin_pile(textures)
-    chaves = load_chaves(textures)
+    bed = load_bed(textures)
     barrel = load_barrel(textures)
     brook = load_brook(textures)
     old_wooden_table = load_old_wooden_table(textures)
@@ -250,9 +249,9 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             "Bitcoin pile 15",
         ),
         static_object(
-            chaves,
-            compose_transform((2.30, 7.80, -6.60), rotation=(0.0, 235.0, 0.0), object_scale=1.08),
-            "Chaves",
+            bed,
+            compose_transform((2.10, 7.80, -6.20), rotation=(0.0, 0.0, 0.0), object_scale=0.5),
+            "Bed",
         ),
         static_object(
             barrel,
