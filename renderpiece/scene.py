@@ -51,6 +51,16 @@ def load_luffy(textures: TextureCache) -> GpuMesh:
     )
 
 
+def load_nami(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Nami",
+        ASSET_ROOT / "lado_externo/nami/source/Nami/Nami.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
 def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
     bitcoin_texture = (
         ASSET_ROOT
@@ -132,6 +142,7 @@ def load_barrel(textures: TextureCache) -> GpuMesh:
 def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
+    nami = load_nami(textures)
     bitcoin_pile = load_bitcoin_pile(textures)
     bed = load_bed(textures)
     barrel = load_barrel(textures)
@@ -153,6 +164,11 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             luffy,
             compose_transform((0.0, 11.92, 10.60), rotation=(0.0, 0.0, 0.0), object_scale=0.013),
             "Luffy on prow",
+        ),
+        static_object(
+            nami,
+            compose_transform((0.0, 19.40, 1.00), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
+            "Nami on prow",
         ),
         static_object(
             bitcoin_pile,
