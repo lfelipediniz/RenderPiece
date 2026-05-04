@@ -107,6 +107,21 @@ def load_brook(textures: TextureCache) -> GpuMesh:
     )
 
 
+
+
+def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
+    table_dir = ASSET_ROOT / "lado_interno/old-wooden-table-with-some-dust"
+    table_texture = table_dir / "textures/desk_UV02_desk_BaseColor.png"
+    return load_obj_mesh(
+        "Old wooden table",
+        table_dir / "source/desk_UV02.obj",
+        textures,
+        fallback_texture=textures.from_file(table_texture),
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
 def load_barrel(textures: TextureCache) -> GpuMesh:
     barrel_texture = (
         ASSET_ROOT
@@ -129,6 +144,9 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
     chaves = load_chaves(textures)
     barrel = load_barrel(textures)
     brook = load_brook(textures)
+    old_wooden_table = load_old_wooden_table(textures)
+
+
 
     return [
         static_object(
@@ -218,8 +236,8 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         ),
         static_object(
             chaves,
-            compose_transform((-2.50, 7.80, -4.60), rotation=(0.0, 235.0, 0.0), object_scale=1.08),
-            "Chaves on deck",
+            compose_transform((2.30, 7.80, -6.60), rotation=(0.0, 235.0, 0.0), object_scale=1.08),
+            "Chaves",
         ),
         static_object(
             barrel,
@@ -229,6 +247,11 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         static_object(
             brook,
             compose_transform((-3.75, 7.80, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.0),
-            "Brook next to Chaves",
+            "Brook",
+        ),
+        static_object(
+            old_wooden_table,
+            compose_transform((0.30, 7.80, -8.30), rotation=(0.0, 0.0, 0.0), object_scale=0.015),
+            "Old wooden table",
         ),
     ]
