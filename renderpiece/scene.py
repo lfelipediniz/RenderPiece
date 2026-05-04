@@ -7,6 +7,7 @@ ambiente externo (proa/conves do Going Merry sobre o oceano) do interno
 delimita os dois e nao conta para os 6 modelos exigidos
 """
 
+import math
 from dataclasses import dataclass
 from typing import Callable
 import numpy as np
@@ -14,6 +15,7 @@ from .config import ASSET_ROOT
 from .math3d import compose_transform
 from .mesh import GpuMesh
 from .obj_loader import load_obj_mesh
+from .state import UserTransforms
 from .textures import TextureCache
 
 
@@ -157,7 +159,7 @@ def load_barrel(textures: TextureCache) -> GpuMesh:
     )
 
 
-def build_scene(textures: TextureCache) -> list[SceneObject]:
+def build_scene(textures: TextureCache, transforms: UserTransforms) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     nami = load_nami(textures)
@@ -178,10 +180,14 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             compose_transform((0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), object_scale=0.01),
             "Ship",
         ),
-        static_object(
-            luffy,
-            compose_transform((0.0, 11.92, 10.60), rotation=(0.0, 0.0, 0.0), object_scale=0.013),
+        SceneObject(
             "Luffy on prow",
+            luffy,
+            lambda _elapsed: compose_transform(
+                (0.0, 11.92, 10.60),
+                rotation=(0.0, 0.0, 0.0),
+                object_scale=0.013 * transforms.luffy_scale,
+            ),
         ),
         static_object(
             nami,
@@ -273,10 +279,14 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             compose_transform((-2.65, 5.90, -3.00), rotation=(0.0, -18.0, 0.0), object_scale=0.011),
             "Barrel on lower deck",
         ),
-        static_object(
-            franky,
-            compose_transform((3.00, 5.90, -1.00), rotation=(0.0, -108.0, 0.0), object_scale=0.011),
+        SceneObject(
             "Franky",
+            franky,
+            lambda _elapsed: compose_transform(
+                (3.00, 5.90, -1.00),
+                rotation=(0.0, -108.0 + math.degrees(transforms.franky_rotation_y), 0.0),
+                object_scale=0.011,
+            ),
         ),
         static_object(
             brook,
@@ -288,9 +298,13 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             compose_transform((0.30, 7.80, -8.30), rotation=(0.0, 0.0, 0.0), object_scale=0.015),
             "Old wooden table",
         ),
-        static_object(
-            tony_chopper,
-            compose_transform((-1.00, 7.80, -7.50), rotation=(0.0, 45.0, 0.0), object_scale=0.02),
+        SceneObject(
             "Tony Chopper next to desk",
+            tony_chopper,
+            lambda _elapsed: compose_transform(
+                (-1.00 + transforms.chopper_offset_x, 7.80, -7.50 + transforms.chopper_offset_z),
+                rotation=(0.0, 45.0, 0.0),
+                object_scale=0.02,
+            ),
         ),
     ]

@@ -5,9 +5,10 @@ Ordem de desenho por frame: limpa color/depth, desenha os modelos da cena
 o depth ja preenchido) e por fim o skybox com `glDepthFunc(GL_LEQUAL)`
 para preencher so o que sobrou. Overlays 2D vem por ultimo (sem depth)
 
-Mapa de teclas (cumpre req 10 com a tecla P):
+Mapa de teclas (cumpre req 10 com a tecla P e req 7 com 1-8):
   WASD/Space/Shift -> camera; Mouse -> olhar;
   P -> wireframe; R -> reseta camera; M -> muta musica; ESC -> pausa
+  1/2 -> escala Luffy; 3/4 -> rotaciona Franky; 5/6 e 7/8 -> translada Chopper
 """
 
 import math
@@ -38,8 +39,16 @@ from .overlay import MutedIndicator, PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
-from .state import Toggles
+from .state import Toggles, UserTransforms
 from .textures import TextureCache
+
+# Limites e velocidades das transformacoes do requisito 7
+LUFFY_SCALE_SPEED = 0.6     # mult/s ao segurar 1 ou 2
+LUFFY_SCALE_MIN = 0.3
+LUFFY_SCALE_MAX = 3.0
+FRANKY_ROT_SPEED = math.radians(120.0)  # rad/s ao segurar 3 ou 4
+CHOPPER_MOVE_SPEED = 1.5    # unidades/s ao segurar 5/6/7/8
+CHOPPER_OFFSET_LIMIT = 3.0  # mantem o Chopper dentro da cabine
 
 BACKGROUND_MUSIC_PATH = ASSET_ROOT / "One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3"
 
@@ -48,7 +57,12 @@ def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int
     glViewport(0, 0, width, height)
 
 
-def process_keyboard(window: glfw._GLFWwindow, camera: Camera, dt: float) -> None:
+def process_keyboard(
+    window: glfw._GLFWwindow,
+    camera: Camera,
+    transforms: UserTransforms,
+    dt: float,
+) -> None:
     velocity = camera.speed * dt
 
     flat_front = normalize(np.array([camera.front[0], 0.0, camera.front[2]], dtype=np.float32))
@@ -66,6 +80,36 @@ def process_keyboard(window: glfw._GLFWwindow, camera: Camera, dt: float) -> Non
         camera.move(camera.world_up, velocity)
     if glfw.get_key(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS:
         camera.move(-camera.world_up, velocity)
+
+    # Requisito 7: transformacoes interativas (escala / rotacao / translacao)
+    if glfw.get_key(window, glfw.KEY_1) == glfw.PRESS:
+        transforms.luffy_scale = min(
+            LUFFY_SCALE_MAX, transforms.luffy_scale + LUFFY_SCALE_SPEED * dt
+        )
+    if glfw.get_key(window, glfw.KEY_2) == glfw.PRESS:
+        transforms.luffy_scale = max(
+            LUFFY_SCALE_MIN, transforms.luffy_scale - LUFFY_SCALE_SPEED * dt
+        )
+    if glfw.get_key(window, glfw.KEY_3) == glfw.PRESS:
+        transforms.franky_rotation_y += FRANKY_ROT_SPEED * dt
+    if glfw.get_key(window, glfw.KEY_4) == glfw.PRESS:
+        transforms.franky_rotation_y -= FRANKY_ROT_SPEED * dt
+    if glfw.get_key(window, glfw.KEY_5) == glfw.PRESS:
+        transforms.chopper_offset_x = min(
+            CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_x + CHOPPER_MOVE_SPEED * dt
+        )
+    if glfw.get_key(window, glfw.KEY_6) == glfw.PRESS:
+        transforms.chopper_offset_x = max(
+            -CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_x - CHOPPER_MOVE_SPEED * dt
+        )
+    if glfw.get_key(window, glfw.KEY_7) == glfw.PRESS:
+        transforms.chopper_offset_z = min(
+            CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_z + CHOPPER_MOVE_SPEED * dt
+        )
+    if glfw.get_key(window, glfw.KEY_8) == glfw.PRESS:
+        transforms.chopper_offset_z = max(
+            -CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_z - CHOPPER_MOVE_SPEED * dt
+        )
 
 
 def init_window() -> glfw._GLFWwindow:
@@ -92,6 +136,7 @@ def init_window() -> glfw._GLFWwindow:
 def run() -> None:
     camera = Camera()
     toggles = Toggles()
+    transforms = UserTransforms()
     window = init_window()
     music = BackgroundMusic(BACKGROUND_MUSIC_PATH)
 
@@ -132,7 +177,7 @@ def run() -> None:
 
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
-    objects = build_scene(textures)
+    objects = build_scene(textures, transforms)
     skybox = SkyBox()
     ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -147,7 +192,7 @@ def run() -> None:
         previous_time = current_time
 
         if not toggles.paused:
-            process_keyboard(window, camera, dt)
+            process_keyboard(window, camera, transforms, dt)
 
         width, height = glfw.get_framebuffer_size(window)
         aspect = width / max(height, 1)
