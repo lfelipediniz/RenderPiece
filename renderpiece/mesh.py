@@ -1,3 +1,10 @@
+"""Estruturas de geometria/material residentes na GPU
+
+`GpuMesh` segura o trio VAO/VBO/EBO de um modelo, sua lista de `DrawBatch`
+(um trecho de indices por material) e os `Material`s ja resolvidos. O
+`draw` faz um `glDrawElements` por batch, trocando textura/`u_diffuse`
+"""
+
 from __future__ import annotations
 import ctypes
 from dataclasses import dataclass, field
@@ -55,7 +62,6 @@ class GpuMesh:
     vao: int
     vbo: int
     ebo: int
-    index_count: int
     batches: list[DrawBatch]
     materials: dict[str, Material]
     bounds: Bounds

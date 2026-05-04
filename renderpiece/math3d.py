@@ -1,3 +1,10 @@
+"""Algebra linear minima para a cadeia Model x View x Projection
+
+Todas as matrizes sao 4x4 row-major em `np.float32`. Por isso o codigo passa
+`GL_TRUE` em `glUniformMatrix4fv(..., transpose=GL_TRUE, ...)`, que pede ao
+OpenGL para transpor antes de usar (OpenGL espera column-major por padrao)
+"""
+
 from __future__ import annotations
 import math
 import numpy as np
@@ -68,6 +75,8 @@ def euler_xyz(rx: float, ry: float, rz: float) -> np.ndarray:
 
 
 def perspective(fov_radians: float, aspect: float, near: float, far: float) -> np.ndarray:
+    # Projecao em perspectiva classica (mesma forma do gluPerspective), com z
+    # mapeado para [-1, 1] no clip space do OpenGL
     f = 1.0 / math.tan(fov_radians / 2.0)
     matrix = np.zeros((4, 4), dtype=np.float32)
     matrix[0, 0] = f / aspect
@@ -79,6 +88,8 @@ def perspective(fov_radians: float, aspect: float, near: float, far: float) -> n
 
 
 def look_at(eye: np.ndarray, center: np.ndarray, up: np.ndarray) -> np.ndarray:
+    # View matrix no estilo gluLookAt: monta uma base ortonormal (s, u, -f) e
+    # aplica a translacao inversa de `eye`
     f = normalize(center - eye)
     s = normalize(np.cross(f, up))
     u = np.cross(s, f)

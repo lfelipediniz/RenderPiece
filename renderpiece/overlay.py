@@ -1,3 +1,11 @@
+"""HUD 2D em coordenadas normalizadas de tela (NDC)
+
+Inclui o `PauseOverlay` (escurece a tela e escreve "PAUSED" quando ESC
+pausa o jogo) e o `MutedIndicator` (badge vermelho com "MUTED" no canto
+superior direito quando a musica esta silenciada com M). A fonte e
+gerada por software a partir de uma tabela 5x7 de bits em `_GLYPHS`
+"""
+
 import ctypes
 import numpy as np
 from OpenGL.GL import (

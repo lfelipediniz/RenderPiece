@@ -1,3 +1,12 @@
+"""Montagem da cena One Piece (cumpre requisitos 1, 2, 3, 5)
+
+Cada `load_*` carrega um `.obj` distinto via `load_obj_mesh` (req 4) e
+`build_scene` posiciona os modelos com `compose_transform`, separando o
+ambiente externo (proa/conves do Going Merry sobre o oceano) do interno
+(cabine: cama, mesa, Brook, Chopper). O ambiente em si (Going Merry)
+delimita os dois e nao conta para os 6 modelos exigidos
+"""
+
 from dataclasses import dataclass
 from typing import Callable
 import numpy as np
@@ -10,6 +19,13 @@ from .textures import TextureCache
 
 @dataclass
 class SceneObject:
+    """Modelo da cena com sua matriz de mundo dependente do tempo
+
+    `model_factory(elapsed)` permite animacoes futuras sem mudar a API.
+    `mesh.anchor_to_base` re-centraliza o modelo no XZ e apoia o piso
+    do bbox em y=0 antes da matriz do mundo ser aplicada
+    """
+
     name: str
     mesh: GpuMesh
     model_factory: Callable[[float], np.ndarray]
@@ -93,7 +109,6 @@ def load_bed(textures: TextureCache) -> GpuMesh:
     )
 
 
-
 def load_brook(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Brook",
@@ -102,8 +117,6 @@ def load_brook(textures: TextureCache) -> GpuMesh:
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
     )
-
-
 
 
 
@@ -130,7 +143,6 @@ def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
     )
 
 
-
 def load_barrel(textures: TextureCache) -> GpuMesh:
     barrel_texture = (
         ASSET_ROOT
@@ -145,7 +157,6 @@ def load_barrel(textures: TextureCache) -> GpuMesh:
     )
 
 
-
 def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
@@ -158,9 +169,8 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
     old_wooden_table = load_old_wooden_table(textures)
     tony_chopper = load_tony_chopper(textures)
 
-
-
-
+    # bitcoin_pile e instanciado varias vezes para encher o tesouro do navio;
+    # conta como UM modelo (req 2: repeticoes nao somam)
 
     return [
         static_object(

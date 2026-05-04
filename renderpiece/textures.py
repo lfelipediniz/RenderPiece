@@ -1,3 +1,12 @@
+"""Cache de texturas 2D
+
+Le imagens via PIL, sobe para a GPU como `GL_TEXTURE_2D` com mipmaps e
+guarda o handle em um dicionario para evitar recarregar o mesmo arquivo
+
+Tambem expoe `white_texture`, usada como fallback quando um material do
+`.obj`/`.mtl` nao tem `map_Kd`
+"""
+
 from pathlib import Path
 from OpenGL.GL import (
     GL_CLAMP_TO_EDGE,
@@ -35,6 +44,7 @@ class TextureCache:
         if name in self.cache:
             return self.cache[name]
 
+        # Inverte verticalmente porque OpenGL trata v=0 como base e PIL como topo
         image = image.convert("RGBA").transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         width, height = image.size
         data = image.tobytes()

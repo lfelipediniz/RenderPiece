@@ -1,3 +1,15 @@
+"""Loop principal: inicializa GLFW + OpenGL, monta a cena e desenha
+
+Ordem de desenho por frame: limpa color/depth, desenha os modelos da cena
+(cada `SceneObject` com sua matriz de modelo), depois o oceano (que usa
+o depth ja preenchido) e por fim o skybox com `glDepthFunc(GL_LEQUAL)`
+para preencher so o que sobrou. Overlays 2D vem por ultimo (sem depth)
+
+Mapa de teclas (cumpre req 10 com a tecla P):
+  WASD/Space/Shift -> camera; Mouse -> olhar;
+  P -> wireframe; R -> reseta camera; M -> muta musica; ESC -> pausa
+"""
+
 import math
 import glfw
 import numpy as np
@@ -14,6 +26,7 @@ from OpenGL.GL import (
     glEnable,
     glPolygonMode,
     glUniformMatrix4fv,
+    glViewport,
 )
 
 from .audio import BackgroundMusic
@@ -32,8 +45,6 @@ BACKGROUND_MUSIC_PATH = ASSET_ROOT / "One Piece - Bink's Sake _ Piano [SeDyYtIuh
 
 
 def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int) -> None:
-    from OpenGL.GL import glViewport
-
     glViewport(0, 0, width, height)
 
 
@@ -107,7 +118,7 @@ def run() -> None:
             toggles.wireframe = not toggles.wireframe
             print(f"[input] Wireframe: {toggles.wireframe}")
         elif key == glfw.KEY_R:
-            camera.__init__()
+            camera.reset()
             print("[input] Camera reset")
         elif key == glfw.KEY_M:
             toggles.muted = music.toggle_mute()

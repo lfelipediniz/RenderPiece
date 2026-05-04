@@ -1,3 +1,10 @@
+"""Camera FPS (Yaw/Pitch) com clamp dentro dos limites do mundo
+
+Movimento se da no plano XZ (WASD), com Space/Shift para altura. O mouse
+controla orientacao. O `move` aplica os clamps que cumprem o requisito 9:
+o jogador nao consegue sair da caixa do skybox nem furar o oceano
+"""
+
 import math
 
 import numpy as np
@@ -8,13 +15,17 @@ from .math3d import look_at, normalize
 
 class Camera:
     def __init__(self) -> None:
+        self.world_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
+        self.reset()
+
+    def reset(self) -> None:
+        """Volta para a pose inicial (usada pela tecla R)"""
         self.position = np.array([0.0, DECK_Y + 2.0, 24.0], dtype=np.float32)
         self.yaw = -90.0
         self.pitch = -8.0
         self.speed = 9.0
         self.mouse_sensitivity = 0.09
         self.front = np.array([0.0, 0.0, -1.0], dtype=np.float32)
-        self.world_up = np.array([0.0, 1.0, 0.0], dtype=np.float32)
         self.first_mouse = True
         self.last_mouse_x = WINDOW_WIDTH / 2
         self.last_mouse_y = WINDOW_HEIGHT / 2

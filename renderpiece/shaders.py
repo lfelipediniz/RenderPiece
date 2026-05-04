@@ -1,3 +1,9 @@
+"""Programa de shader padrao usado pelos modelos da cena
+
+Apenas amostra a textura difusa e multiplica pela cor `Kd` do material
+Nao ha calculo de iluminacao, conforme requisito 12 do projeto
+"""
+
 from OpenGL.GL import (
     GL_COMPILE_STATUS,
     GL_FRAGMENT_SHADER,

@@ -1,3 +1,11 @@
+"""Loader proprio de Wavefront `.obj` + `.mtl` (cumpre requisito 11)
+
+Triangula faces N-gono em fan, deduplica vertices por (pos, uv, normal),
+agrupa indices em batches por material e resolve o caminho da textura
+(`map_Kd`) procurando em pastas adjacentes. Quando o material nao tem
+textura, cai num `fallback_texture` ou na textura branca
+"""
+
 from __future__ import annotations
 import ctypes
 import math
@@ -27,6 +35,8 @@ from .textures import TextureCache
 
 
 def parse_texture_name(rest: str) -> str:
+    # `map_Kd` aceita flags antes do nome do arquivo (ex.: `-clamp on tex.png`)
+    # Pula as flags conhecidas e devolve apenas o nome propriamente dito
     option_lengths = {
         "-blendu": 1,
         "-blendv": 1,
@@ -137,6 +147,8 @@ def parse_obj_index(value: str, total: int) -> int | None:
 
 
 def fallback_uv(position: tuple[float, float, float]) -> tuple[float, float]:
+    # Se o vertice nao tem UV, projeta planarmente em XZ para evitar
+    # amostragem degenerada no shader (todos os UVs iguais a 0)
     return (position[0] * 0.08, position[2] * 0.08)
 
 
@@ -313,7 +325,6 @@ def load_obj_mesh(
         vao=vao,
         vbo=vbo,
         ebo=ebo,
-        index_count=len(indices_np),
         batches=batches or [DrawBatch(0, len(indices_np), "default")],
         materials=materials,
         bounds=bounds,
