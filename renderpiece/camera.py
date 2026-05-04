@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from .config import DECK_Y, SKY_CEILING_Y, TERRAIN_Y, WINDOW_HEIGHT, WINDOW_WIDTH, WORLD_HALF_SIZE
+from .config import DECK_Y, OCEAN_Y, SKY_CEILING_Y, TERRAIN_Y, WINDOW_HEIGHT, WINDOW_WIDTH, WORLD_HALF_SIZE
 from .math3d import look_at, normalize
 
 
@@ -58,5 +58,9 @@ class Camera:
         self.position += direction * amount
         self.position[0] = np.clip(self.position[0], -WORLD_HALF_SIZE + 1.0, WORLD_HALF_SIZE - 1.0)
         self.position[2] = np.clip(self.position[2], -WORLD_HALF_SIZE + 1.0, WORLD_HALF_SIZE - 1.0)
-        self.position[1] = np.clip(self.position[1], TERRAIN_Y + 0.35, SKY_CEILING_Y - 0.5)
+        # Limite inferior é a superfície do oceano (com folga para amplitude
+        # máxima das ondas), conforme requisito 9: a câmera não pode atravessar
+        # o piso do ambiente externo (que aqui é a água).
+        floor_y = max(TERRAIN_Y + 0.35, OCEAN_Y + 1.0)
+        self.position[1] = np.clip(self.position[1], floor_y, SKY_CEILING_Y - 0.5)
 

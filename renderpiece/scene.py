@@ -36,44 +36,25 @@ def load_ship(textures: TextureCache) -> GpuMesh:
 
 
 def load_luffy(textures: TextureCache) -> GpuMesh:
-    luffy_textures = ASSET_ROOT / "lado_externo/luffy/textures"
-    luffy = load_obj_mesh(
+    luffy_dir = ASSET_ROOT / "lado_externo/luffy-one-piece"
+    luffy_texture = luffy_dir / "textures/Luffy1.png"
+    return load_obj_mesh(
         "Luffy",
-        ASSET_ROOT / "lado_externo/luffy/source/Monkey D. Luffy.obj",
+        luffy_dir / "source/fb4b2915893e461ab6e37275163b83fc/Luffy One Piece.obj",
         textures,
+        fallback_texture=textures.from_file(luffy_texture),
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
         material_texture_overrides={
-            "24_-Straw_Hat.Hat_Hair_0.2_0_0": luffy_textures / "Scratch.png",
-            "Gum": luffy_textures / "IMG_1670.jpeg",
-            "Gum.001": luffy_textures / "IMG_1671.png",
-            "Lower_shorts": luffy_textures / "IMG_1663.jpeg",
-            "Pupil": luffy_textures / "Scratch.png",
-            "Ribbon": luffy_textures / "IMG_1670.jpeg",
-            "Sandals": luffy_textures / "IMG_0451.jpeg",
-            "Sandals.001": luffy_textures / "IMG_0451.jpeg",
-            "Shirt": luffy_textures / "IMG_1670.jpeg",
-            "Shorts": luffy_textures / "IMG_1663.jpeg",
-            "Straw_hat": luffy_textures / "IMG_1674.jpeg",
-            "Teeth": luffy_textures / "IMG_1671.png",
-            "button": luffy_textures / "IMG_1672.jpeg",
-            "eye": luffy_textures / "IMG_1671.png",
-            "hair": luffy_textures / "Scratch.png",
-            "shock": luffy_textures / "IMG_1671.png",
-            "skin": luffy_textures / "IMG_1662.jpeg",
-            "tongue": luffy_textures / "IMG_1670.jpeg",
+            "03___Default": luffy_texture,
         },
     )
-    luffy.batches = [
-        batch for batch in luffy.batches if batch.material_name != "Eyebrows_and_scratch"
-    ]
-    return luffy
 
 
 def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
     bitcoin_texture = (
         ASSET_ROOT
-        / "lado_externo/bitcoin/textures/golden-concrete-foil-paper-texture_1249-354.avif"
+        / "lado_externo/bitcoin/textures/360_F_561618223_L4KBczVuqzGhWBOIvueotLNqduStHNia.png"
     )
     return load_obj_mesh(
         "Bitcoin pile",
@@ -170,7 +151,7 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
         ),
         static_object(
             luffy,
-            compose_transform((0.0, 11.92, 10.60), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
+            compose_transform((0.0, 11.92, 10.60), rotation=(0.0, 0.0, 0.0), object_scale=0.013),
             "Luffy on prow",
         ),
         static_object(

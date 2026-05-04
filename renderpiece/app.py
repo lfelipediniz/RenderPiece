@@ -17,15 +17,19 @@ from OpenGL.GL import (
     glUniformMatrix4fv,
 )
 
+from .audio import BackgroundMusic
 from .camera import Camera
-from .config import WINDOW_HEIGHT, WINDOW_WIDTH
+from .config import ASSET_ROOT, OCEAN_Y, WINDOW_HEIGHT, WINDOW_WIDTH
 from .math3d import normalize, perspective
+from .ocean import Ocean
 from .overlay import PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
 from .state import Toggles
 from .textures import TextureCache
+
+BACKGROUND_MUSIC_PATH = ASSET_ROOT / "One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3"
 
 
 def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int) -> None:
@@ -81,6 +85,7 @@ def run() -> None:
     camera = Camera()
     toggles = Toggles()
     window = init_window()
+    music = BackgroundMusic(BACKGROUND_MUSIC_PATH)
 
     def mouse_callback(_window: glfw._GLFWwindow, xpos: float, ypos: float) -> None:
         if toggles.paused:
@@ -94,10 +99,12 @@ def run() -> None:
             toggles.paused = not toggles.paused
             if toggles.paused:
                 glfw.set_input_mode(window_handle, glfw.CURSOR, glfw.CURSOR_NORMAL)
+                music.pause()
                 print("[input] Paused")
             else:
                 glfw.set_input_mode(window_handle, glfw.CURSOR, glfw.CURSOR_DISABLED)
                 camera.first_mouse = True
+                music.resume()
                 print("[input] Unpaused")
         elif key == glfw.KEY_P:
             toggles.wireframe = not toggles.wireframe
@@ -116,7 +123,10 @@ def run() -> None:
     textures = TextureCache()
     objects = build_scene(textures)
     skybox = SkyBox()
+    ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
+
+    music.play()
 
     previous_time = glfw.get_time()
     while not glfw.window_should_close(window):
@@ -142,6 +152,10 @@ def run() -> None:
         for scene_object in objects:
             scene_object.mesh.draw(shader, scene_object.model_matrix(current_time), textures.white_texture)
 
+        # Oceano desenhado depois dos objetos opacos para aproveitar o depth
+        # buffer já preenchido, e antes do skybox (que cobre o restante).
+        ocean.draw(view, projection, current_time, toggles.wireframe)
+
         skybox.draw(view, projection)
 
         if toggles.paused:
@@ -150,5 +164,6 @@ def run() -> None:
         glfw.swap_buffers(window)
         glfw.poll_events()
 
+    music.shutdown()
     glfw.terminate()
 
