@@ -61,6 +61,16 @@ def load_nami(textures: TextureCache) -> GpuMesh:
     )
 
 
+def load_franky(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Franky",
+        ASSET_ROOT / "lado_externo/franky/source/franky/franky.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
 def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
     bitcoin_texture = (
         ASSET_ROOT
@@ -143,6 +153,7 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     nami = load_nami(textures)
+    franky = load_franky(textures)
     bitcoin_pile = load_bitcoin_pile(textures)
     bed = load_bed(textures)
     barrel = load_barrel(textures)
@@ -254,6 +265,11 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             barrel,
             compose_transform((-2.65, 5.90, -3.00), rotation=(0.0, -18.0, 0.0), object_scale=0.011),
             "Barrel on lower deck",
+        ),
+        static_object(
+            franky,
+            compose_transform((3.00, 5.90, -1.00), rotation=(0.0, -108.0, 0.0), object_scale=0.011),
+            "Franky",
         ),
         static_object(
             brook,
