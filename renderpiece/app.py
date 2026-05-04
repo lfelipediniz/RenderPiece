@@ -1,5 +1,4 @@
 import math
-
 import glfw
 import numpy as np
 from OpenGL.GL import (
@@ -22,7 +21,7 @@ from .camera import Camera
 from .config import ASSET_ROOT, OCEAN_Y, WINDOW_HEIGHT, WINDOW_WIDTH
 from .math3d import normalize, perspective
 from .ocean import Ocean
-from .overlay import PauseOverlay
+from .overlay import MutedIndicator, PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
@@ -40,8 +39,6 @@ def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int
 
 def process_keyboard(window: glfw._GLFWwindow, camera: Camera, dt: float) -> None:
     velocity = camera.speed * dt
-    if glfw.get_key(window, glfw.KEY_LEFT_CONTROL) == glfw.PRESS:
-        velocity *= 2.0
 
     flat_front = normalize(np.array([camera.front[0], 0.0, camera.front[2]], dtype=np.float32))
     flat_right = normalize(np.array([camera.right[0], 0.0, camera.right[2]], dtype=np.float32))
@@ -112,6 +109,9 @@ def run() -> None:
         elif key == glfw.KEY_R:
             camera.__init__()
             print("[input] Camera reset")
+        elif key == glfw.KEY_M:
+            toggles.muted = music.toggle_mute()
+            print(f"[input] Music {'muted' if toggles.muted else 'unmuted'}")
 
     glfw.set_cursor_pos_callback(window, mouse_callback)
     glfw.set_key_callback(window, key_callback)
@@ -125,6 +125,7 @@ def run() -> None:
     skybox = SkyBox()
     ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
+    muted_indicator = MutedIndicator(WINDOW_WIDTH, WINDOW_HEIGHT)
 
     music.play()
 
@@ -157,6 +158,9 @@ def run() -> None:
         ocean.draw(view, projection, current_time, toggles.wireframe)
 
         skybox.draw(view, projection)
+
+        if toggles.muted:
+            muted_indicator.draw()
 
         if toggles.paused:
             pause_overlay.draw()

@@ -1,5 +1,4 @@
 from pathlib import Path
-
 from OpenGL.GL import (
     GL_CLAMP_TO_EDGE,
     GL_LINEAR,

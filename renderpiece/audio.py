@@ -1,9 +1,8 @@
 from __future__ import annotations
-
 import os
 from pathlib import Path
 
-# Evita que o pygame imprima sua mensagem de boas-vindas no terminal.
+# Evita que o pygame imprima sua mensagem de boas-vindas no terminal
 os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
 
 try:
@@ -22,6 +21,8 @@ class BackgroundMusic:
     def __init__(self, path: Path, volume: float = 0.5) -> None:
         self.available = False
         self._is_paused = False
+        self._is_muted = False
+        self._volume_before_mute = volume
 
         if pygame is None:
             print("[audio] pygame não está instalado; música de fundo desativada.")
@@ -61,6 +62,33 @@ class BackgroundMusic:
             return
         pygame.mixer.music.unpause()
         self._is_paused = False
+
+    def mute(self) -> None:
+        """Silencia a música mantendo a reprodução em andamento."""
+        if not self.available or self._is_muted:
+            return
+        self._volume_before_mute = pygame.mixer.music.get_volume()
+        pygame.mixer.music.set_volume(0.0)
+        self._is_muted = True
+
+    def unmute(self) -> None:
+        """Restaura o volume anterior ao mute."""
+        if not self.available or not self._is_muted:
+            return
+        pygame.mixer.music.set_volume(self._volume_before_mute)
+        self._is_muted = False
+
+    def toggle_mute(self) -> bool:
+        """Alterna mute/unmute. Retorna True se ficou mutada."""
+        if self._is_muted:
+            self.unmute()
+        else:
+            self.mute()
+        return self._is_muted
+
+    @property
+    def is_muted(self) -> bool:
+        return self._is_muted
 
     def shutdown(self) -> None:
         if not self.available:

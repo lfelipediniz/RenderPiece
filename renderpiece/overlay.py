@@ -1,5 +1,4 @@
 import ctypes
-
 import numpy as np
 from OpenGL.GL import (
     GL_ARRAY_BUFFER,
@@ -84,6 +83,8 @@ _GLYPHS = {
     "S": [0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110],
     "E": [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
     "D": [0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110],
+    "M": [0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001],
+    "T": [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
 }
 
 
@@ -183,6 +184,75 @@ class PauseOverlay:
         glBindTexture(GL_TEXTURE_2D, self._white_tex)
         glUniform4f(self._u_color, 0.0, 0.0, 0.0, 0.5)
         glBindVertexArray(self._fs_vao)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+
+        glBindTexture(GL_TEXTURE_2D, self._text_tex)
+        glUniform4f(self._u_color, 1.0, 1.0, 1.0, 1.0)
+        glBindVertexArray(self._text_vao)
+        glDrawArrays(GL_TRIANGLES, 0, 6)
+
+        glBindVertexArray(0)
+        glDisable(GL_BLEND)
+        glEnable(GL_DEPTH_TEST)
+
+
+class MutedIndicator:
+    """Pequeno badge no canto superior direito mostrando 'MUTED'."""
+
+    def __init__(self, window_w: int = 1280, window_h: int = 720) -> None:
+        vs = _compile_shader(GL_VERTEX_SHADER, _OVERLAY_VS)
+        fs = _compile_shader(GL_FRAGMENT_SHADER, _OVERLAY_FS)
+        self._program = glCreateProgram()
+        glAttachShader(self._program, vs)
+        glAttachShader(self._program, fs)
+        glLinkProgram(self._program)
+        if not glGetProgramiv(self._program, GL_LINK_STATUS):
+            raise RuntimeError(glGetProgramInfoLog(self._program).decode())
+        glDeleteShader(vs)
+        glDeleteShader(fs)
+
+        self._u_color = glGetUniformLocation(self._program, "u_color")
+
+        self._white_tex = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self._white_tex)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, 1, 1, 0, GL_RED, GL_UNSIGNED_BYTE, b"\xff")
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+
+        data, tw, th = _make_text_bitmap("MUTED")
+        self._text_tex = glGenTextures(1)
+        glBindTexture(GL_TEXTURE_2D, self._text_tex)
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, tw, th, 0, GL_RED, GL_UNSIGNED_BYTE, data)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+
+        text_h = 0.05
+        text_w = text_h * (tw / th) * (window_h / window_w)
+        right = 0.97
+        top = 0.95
+        text_x0 = right - text_w
+        text_y0 = top - text_h
+        self._text_vao = _quad_vao(text_x0, text_y0, right, top)
+
+        pad_x = 0.02 * (window_h / window_w)
+        pad_y = 0.015
+        self._bg_vao = _quad_vao(
+            text_x0 - pad_x,
+            text_y0 - pad_y,
+            right + pad_x,
+            top + pad_y,
+        )
+
+    def draw(self) -> None:
+        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glUseProgram(self._program)
+
+        glBindTexture(GL_TEXTURE_2D, self._white_tex)
+        glUniform4f(self._u_color, 0.7, 0.05, 0.05, 0.85)
+        glBindVertexArray(self._bg_vao)
         glDrawArrays(GL_TRIANGLES, 0, 6)
 
         glBindTexture(GL_TEXTURE_2D, self._text_tex)

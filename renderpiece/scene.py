@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 from typing import Callable
-
 import numpy as np
-
 from .config import ASSET_ROOT
 from .math3d import compose_transform
 from .mesh import GpuMesh
@@ -25,10 +23,10 @@ def static_object(mesh: GpuMesh, matrix: np.ndarray, name: str) -> SceneObject:
 
 
 def load_ship(textures: TextureCache) -> GpuMesh:
-    ship_textures = ASSET_ROOT / "navio/textures"
+    ship_textures = ASSET_ROOT / "going-merry/textures"
     return load_obj_mesh(
         "Going Merry",
-        ASSET_ROOT / "navio/source/Going Merry.obj",
+        ASSET_ROOT / "going-merry/source/Going Merry.obj",
         textures,
         fallback_texture=textures.from_file(ship_textures / "000.png"),
         force_white_diffuse_when_textured=True,
@@ -36,11 +34,11 @@ def load_ship(textures: TextureCache) -> GpuMesh:
 
 
 def load_luffy(textures: TextureCache) -> GpuMesh:
-    luffy_dir = ASSET_ROOT / "lado_externo/luffy-one-piece"
+    luffy_dir = ASSET_ROOT / "luffy"
     luffy_texture = luffy_dir / "textures/Luffy1.png"
     return load_obj_mesh(
         "Luffy",
-        luffy_dir / "source/fb4b2915893e461ab6e37275163b83fc/Luffy One Piece.obj",
+        luffy_dir / "source/luffy.obj",
         textures,
         fallback_texture=textures.from_file(luffy_texture),
         fallback_diffuse=(1.0, 1.0, 1.0),
@@ -54,7 +52,7 @@ def load_luffy(textures: TextureCache) -> GpuMesh:
 def load_nami(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Nami",
-        ASSET_ROOT / "lado_externo/nami/source/Nami/Nami.obj",
+        ASSET_ROOT / "nami/source/Nami.obj",
         textures,
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
@@ -64,7 +62,7 @@ def load_nami(textures: TextureCache) -> GpuMesh:
 def load_franky(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Franky",
-        ASSET_ROOT / "lado_externo/franky/source/franky/franky.obj",
+        ASSET_ROOT / "franky/source/franky.obj",
         textures,
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
@@ -74,11 +72,11 @@ def load_franky(textures: TextureCache) -> GpuMesh:
 def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
     bitcoin_texture = (
         ASSET_ROOT
-        / "lado_externo/bitcoin/textures/360_F_561618223_L4KBczVuqzGhWBOIvueotLNqduStHNia.png"
+        / "bitcoin-pile/textures/360_F_561618223_L4KBczVuqzGhWBOIvueotLNqduStHNia.png"
     )
     return load_obj_mesh(
         "Bitcoin pile",
-        ASSET_ROOT / "lado_externo/bitcoin/source/coins.obj",
+        ASSET_ROOT / "bitcoin-pile/source/coins.obj",
         textures,
         fallback_texture=textures.from_file(bitcoin_texture),
         force_white_diffuse_when_textured=True,
@@ -86,10 +84,9 @@ def load_bitcoin_pile(textures: TextureCache) -> GpuMesh:
 
 
 def load_bed(textures: TextureCache) -> GpuMesh:
-    bed_dir = ASSET_ROOT / "lado_interno/bed-minecraft/source/Bed Minecraft by JDanielHE"
     return load_obj_mesh(
         "Bed Minecraft",
-        bed_dir / "Bed.obj",
+        ASSET_ROOT / "bed/source/Bed.obj",
         textures,
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
@@ -100,7 +97,7 @@ def load_bed(textures: TextureCache) -> GpuMesh:
 def load_brook(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Brook",
-        ASSET_ROOT / "lado_interno/one-piece-brook/source/Brook/Brook.obj",
+        ASSET_ROOT / "brook/source/Brook.obj",
         textures,
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
@@ -113,7 +110,7 @@ def load_brook(textures: TextureCache) -> GpuMesh:
 def load_tony_chopper(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Tony Tony Chopper",
-        ASSET_ROOT / "lado_interno/tony-chopper/source/chopper/chopper.obj",
+        ASSET_ROOT / "chopper/source/chopper.obj",
         textures,
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
@@ -121,7 +118,7 @@ def load_tony_chopper(textures: TextureCache) -> GpuMesh:
 
 
 def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
-    table_dir = ASSET_ROOT / "lado_interno/old-wooden-table-with-some-dust"
+    table_dir = ASSET_ROOT / "wooden-table"
     table_texture = table_dir / "textures/desk_UV02_desk_BaseColor.png"
     return load_obj_mesh(
         "Old wooden table",
@@ -137,11 +134,11 @@ def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
 def load_barrel(textures: TextureCache) -> GpuMesh:
     barrel_texture = (
         ASSET_ROOT
-        / "lado_externo/barril/textures/texture-wooden-barrel-background-closeup-600nw-2315911823.webp"
+        / "barrel/textures/texture-wooden-barrel-background-closeup-600nw-2315911823.webp"
     )
     return load_obj_mesh(
         "Barrel",
-        ASSET_ROOT / "lado_externo/barril/source/Barril.obj",
+        ASSET_ROOT / "barrel/source/Barril.obj",
         textures,
         fallback_texture=textures.from_file(barrel_texture),
         force_white_diffuse_when_textured=True,

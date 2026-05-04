@@ -1,8 +1,8 @@
-"""Oceano animado para o ambiente externo.
+"""Oceano animado para o ambiente externo
 
 Atende ao requisito 1 do projeto (o ambiente externo cita "oceano" como exemplo)
 e ao requisito 6 (todo ambiente externo deve ter piso/chão; aqui o piso é a
-superfície do mar, distinto do piso interno do navio).
+superfície do mar, distinto do piso interno do navio)
 
 Implementação:
   - Um plano grande é tesselado em uma malha regular de vértices, gerada com
@@ -13,7 +13,6 @@ Implementação:
     e branco da crista, controlada pela altura instantânea da onda. **Não há
     cálculo de iluminação** (proibido pelo requisito 12); o efeito de "brilho"
     nas cristas vem apenas dessa interpolação por altura.
-  - Pipeline 100% moderno (sem chamadas obsoletas).
 """
 
 from __future__ import annotations
