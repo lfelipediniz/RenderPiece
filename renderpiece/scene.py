@@ -109,6 +109,17 @@ def load_brook(textures: TextureCache) -> GpuMesh:
 
 
 
+
+def load_tony_chopper(textures: TextureCache) -> GpuMesh:
+    return load_obj_mesh(
+        "Tony Tony Chopper",
+        ASSET_ROOT / "lado_interno/tony-chopper/source/chopper/chopper.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
 def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
     table_dir = ASSET_ROOT / "lado_interno/old-wooden-table-with-some-dust"
     table_texture = table_dir / "textures/desk_UV02_desk_BaseColor.png"
@@ -120,6 +131,7 @@ def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
         fallback_diffuse=(1.0, 1.0, 1.0),
         force_white_diffuse_when_textured=True,
     )
+
 
 
 def load_barrel(textures: TextureCache) -> GpuMesh:
@@ -145,6 +157,9 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
     barrel = load_barrel(textures)
     brook = load_brook(textures)
     old_wooden_table = load_old_wooden_table(textures)
+    tony_chopper = load_tony_chopper(textures)
+
+
 
 
 
@@ -253,5 +268,10 @@ def build_scene(textures: TextureCache) -> list[SceneObject]:
             old_wooden_table,
             compose_transform((0.30, 7.80, -8.30), rotation=(0.0, 0.0, 0.0), object_scale=0.015),
             "Old wooden table",
+        ),
+        static_object(
+            tony_chopper,
+            compose_transform((-1.00, 7.80, -7.50), rotation=(0.0, 45.0, 0.0), object_scale=0.02),
+            "Tony Chopper next to desk",
         ),
     ]
