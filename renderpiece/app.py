@@ -1,14 +1,18 @@
-"""Loop principal: inicializa GLFW + OpenGL, monta a cena e desenha
+"""Loop principal: inicializa GLFW + OpenGL, monta a cena e desenha.
 
 Ordem de desenho por frame: limpa color/depth, desenha os modelos da cena
 (cada `SceneObject` com sua matriz de modelo), depois o oceano (que usa
 o depth ja preenchido) e por fim o skybox com `glDepthFunc(GL_LEQUAL)`
 para preencher so o que sobrou. Overlays 2D vem por ultimo (sem depth)
 
-Mapa de teclas (cumpre req 10 com a tecla P e req 7 com 1-8):
+Mapa de teclas:
   WASD/Space/Shift -> camera; Mouse -> olhar;
   P -> wireframe; R -> reseta camera; M -> muta musica; ESC -> pausa
-  1/2 -> escala Luffy; 3/4 -> rotaciona Franky; 5/6 e 7/8 -> translada Chopper
+  L -> liga/desliga fonte externa (sol); I -> liga/desliga luz ambiente
+  Z/X -> decrementa/incrementa ambiente
+  C/V -> decrementa/incrementa reflexao difusa
+  B/N -> decrementa/incrementa reflexao especular
+  J/K -> translada o sol manualmente em torno do navio
 """
 
 import math
@@ -26,6 +30,9 @@ from OpenGL.GL import (
     glClearColor,
     glEnable,
     glPolygonMode,
+    glUniform1f,
+    glUniform1i,
+    glUniform3f,
     glUniformMatrix4fv,
     glViewport,
 )
@@ -33,24 +40,20 @@ from OpenGL.GL import (
 from .audio import BackgroundMusic
 from .camera import Camera
 from .config import ASSET_ROOT, OCEAN_Y, WINDOW_HEIGHT, WINDOW_WIDTH
+from .lighting import EXTERNAL_LIGHT_INTENSITY, LightingState, sun_light_position
 from .math3d import normalize, perspective
 from .ocean import Ocean
 from .overlay import MutedIndicator, PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
-from .state import Toggles, UserTransforms
+from .state import Toggles
 from .textures import TextureCache
 
-# Limites e velocidades das transformacoes do requisito 7
-LUFFY_SCALE_SPEED = 0.6     # mult/s ao segurar 1 ou 2
-LUFFY_SCALE_MIN = 0.3
-LUFFY_SCALE_MAX = 3.0
-FRANKY_ROT_SPEED = math.radians(120.0)  # rad/s ao segurar 3 ou 4
-CHOPPER_MOVE_SPEED = 1.5    # unidades/s ao segurar 5/6/7/8
-CHOPPER_OFFSET_LIMIT = 3.0  # mantem o Chopper dentro da cabine
+LIGHT_ADJUST_SPEED = 0.55
+SUN_TRANSLATION_SPEED = math.radians(38.0)
 
-BACKGROUND_MUSIC_PATH = ASSET_ROOT / "One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3"
+BACKGROUND_MUSIC_PATH = ASSET_ROOT / "audio/One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3"
 
 
 def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int) -> None:
@@ -60,7 +63,7 @@ def framebuffer_size_callback(_window: glfw._GLFWwindow, width: int, height: int
 def process_keyboard(
     window: glfw._GLFWwindow,
     camera: Camera,
-    transforms: UserTransforms,
+    lighting: LightingState,
     dt: float,
 ) -> None:
     velocity = camera.speed * dt
@@ -81,35 +84,43 @@ def process_keyboard(
     if glfw.get_key(window, glfw.KEY_LEFT_SHIFT) == glfw.PRESS:
         camera.move(-camera.world_up, velocity)
 
-    # Requisito 7: transformacoes interativas (escala / rotacao / translacao)
-    if glfw.get_key(window, glfw.KEY_1) == glfw.PRESS:
-        transforms.luffy_scale = min(
-            LUFFY_SCALE_MAX, transforms.luffy_scale + LUFFY_SCALE_SPEED * dt
-        )
-    if glfw.get_key(window, glfw.KEY_2) == glfw.PRESS:
-        transforms.luffy_scale = max(
-            LUFFY_SCALE_MIN, transforms.luffy_scale - LUFFY_SCALE_SPEED * dt
-        )
-    if glfw.get_key(window, glfw.KEY_3) == glfw.PRESS:
-        transforms.franky_rotation_y += FRANKY_ROT_SPEED * dt
-    if glfw.get_key(window, glfw.KEY_4) == glfw.PRESS:
-        transforms.franky_rotation_y -= FRANKY_ROT_SPEED * dt
-    if glfw.get_key(window, glfw.KEY_5) == glfw.PRESS:
-        transforms.chopper_offset_x = min(
-            CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_x + CHOPPER_MOVE_SPEED * dt
-        )
-    if glfw.get_key(window, glfw.KEY_6) == glfw.PRESS:
-        transforms.chopper_offset_x = max(
-            -CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_x - CHOPPER_MOVE_SPEED * dt
-        )
-    if glfw.get_key(window, glfw.KEY_7) == glfw.PRESS:
-        transforms.chopper_offset_z = min(
-            CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_z + CHOPPER_MOVE_SPEED * dt
-        )
-    if glfw.get_key(window, glfw.KEY_8) == glfw.PRESS:
-        transforms.chopper_offset_z = max(
-            -CHOPPER_OFFSET_LIMIT, transforms.chopper_offset_z - CHOPPER_MOVE_SPEED * dt
-        )
+    if glfw.get_key(window, glfw.KEY_Z) == glfw.PRESS:
+        lighting.adjust_ambient(-LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_X) == glfw.PRESS:
+        lighting.adjust_ambient(LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_C) == glfw.PRESS:
+        lighting.adjust_diffuse(-LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_V) == glfw.PRESS:
+        lighting.adjust_diffuse(LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_B) == glfw.PRESS:
+        lighting.adjust_specular(-LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_N) == glfw.PRESS:
+        lighting.adjust_specular(LIGHT_ADJUST_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_J) == glfw.PRESS:
+        lighting.translate_sun(-SUN_TRANSLATION_SPEED * dt)
+    if glfw.get_key(window, glfw.KEY_K) == glfw.PRESS:
+        lighting.translate_sun(SUN_TRANSLATION_SPEED * dt)
+
+
+def upload_lighting_uniforms(
+    shader: ShaderProgram,
+    lighting: LightingState,
+    camera_position: np.ndarray,
+    external_light_position: np.ndarray,
+) -> None:
+    glUniform3f(shader.uniforms["u_camera_position"], *camera_position)
+
+    glUniform1i(shader.uniforms["u_ambient_enabled"], int(lighting.ambient_enabled))
+    glUniform3f(shader.uniforms["u_ambient_color"], 0.95, 0.98, 1.00)
+    glUniform1f(shader.uniforms["u_ambient_strength"], lighting.ambient_strength)
+
+    glUniform1i(shader.uniforms["u_external_light_enabled"], int(lighting.external_light_enabled))
+    glUniform3f(shader.uniforms["u_external_light_position"], *external_light_position)
+    glUniform3f(shader.uniforms["u_external_light_color"], 1.00, 0.86, 0.54)
+    glUniform1f(shader.uniforms["u_external_light_intensity"], EXTERNAL_LIGHT_INTENSITY)
+
+    glUniform1f(shader.uniforms["u_diffuse_strength"], lighting.diffuse_strength)
+    glUniform1f(shader.uniforms["u_specular_strength"], lighting.specular_strength)
 
 
 def init_window() -> glfw._GLFWwindow:
@@ -121,7 +132,7 @@ def init_window() -> glfw._GLFWwindow:
     glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
     glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, glfw.TRUE)
 
-    window = glfw.create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Render Piece - Projeto 2", None, None)
+    window = glfw.create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Render Piece - Projeto 3", None, None)
     if window is None:
         glfw.terminate()
         raise RuntimeError("Could not create GLFW window")
@@ -136,7 +147,7 @@ def init_window() -> glfw._GLFWwindow:
 def run() -> None:
     camera = Camera()
     toggles = Toggles()
-    transforms = UserTransforms()
+    lighting = LightingState()
     window = init_window()
     music = BackgroundMusic(BACKGROUND_MUSIC_PATH)
 
@@ -168,6 +179,12 @@ def run() -> None:
         elif key == glfw.KEY_M:
             toggles.muted = music.toggle_mute()
             print(f"[input] Music {'muted' if toggles.muted else 'unmuted'}")
+        elif key == glfw.KEY_L:
+            lighting.external_light_enabled = not lighting.external_light_enabled
+            print(f"[input] External sun light: {lighting.external_light_enabled}")
+        elif key == glfw.KEY_I:
+            lighting.ambient_enabled = not lighting.ambient_enabled
+            print(f"[input] Ambient light: {lighting.ambient_enabled}")
 
     glfw.set_cursor_pos_callback(window, mouse_callback)
     glfw.set_key_callback(window, key_callback)
@@ -177,7 +194,7 @@ def run() -> None:
 
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
-    objects = build_scene(textures, transforms)
+    objects = build_scene(textures, lighting)
     skybox = SkyBox()
     ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -192,26 +209,43 @@ def run() -> None:
         previous_time = current_time
 
         if not toggles.paused:
-            process_keyboard(window, camera, transforms, dt)
+            process_keyboard(window, camera, lighting, dt)
 
         width, height = glfw.get_framebuffer_size(window)
         aspect = width / max(height, 1)
         view = camera.view_matrix()
-        projection = perspective(math.radians(60.0), aspect, 0.05, 240.0)
+        projection = perspective(math.radians(60.0), aspect, 0.05, 420.0)
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         shader.use()
         glUniformMatrix4fv(shader.uniforms["u_view"], 1, GL_TRUE, view)
         glUniformMatrix4fv(shader.uniforms["u_projection"], 1, GL_TRUE, projection)
+        external_light_position = sun_light_position(lighting.sun_orbit_angle)
+        upload_lighting_uniforms(shader, lighting, camera.position, external_light_position)
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE if toggles.wireframe else GL_FILL)
 
         for scene_object in objects:
-            scene_object.mesh.draw(shader, scene_object.model_matrix(current_time), textures.white_texture)
+            scene_object.mesh.draw(
+                shader,
+                scene_object.model_matrix(current_time),
+                textures.white_texture,
+                scene_object.lighting,
+                scene_object.receives_external_light,
+                scene_object.emissive(lighting.external_light_enabled),
+            )
 
         # Oceano desenhado depois dos objetos opacos para aproveitar o depth
         # buffer já preenchido, e antes do skybox (que cobre o restante).
-        ocean.draw(view, projection, current_time, toggles.wireframe)
+        ocean.draw(
+            view,
+            projection,
+            current_time,
+            toggles.wireframe,
+            lighting,
+            camera.position,
+            external_light_position,
+        )
 
         skybox.draw(view, projection)
 
@@ -226,4 +260,3 @@ def run() -> None:
 
     music.shutdown()
     glfw.terminate()
-

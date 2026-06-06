@@ -1,0 +1,24 @@
+# Materials recovered for the Firefly OBJ.
+# The original upload did not include an MTL file, so these defaults keep the
+# model loadable by the project OBJ loader.
+
+newmtl Material.001
+Kd 0.58 0.62 0.54
+
+newmtl Material.002
+Kd 0.08 0.06 0.04
+
+newmtl Material.003
+Kd 0.12 0.10 0.06
+
+newmtl Material.004
+Kd 0.10 0.08 0.05
+
+newmtl Material.005
+Kd 0.09 0.07 0.04
+
+newmtl Material.006
+Kd 0.90 0.86 0.44
+
+newmtl Material.007
+Kd 0.06 0.05 0.03

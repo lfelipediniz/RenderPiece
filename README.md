@@ -1,7 +1,9 @@
 # RenderPiece
 
-3D scene viewer built with OpenGL 3.3 (core profile) and Python. 
-Renders a One Piece-themed environment: the Going Merry ship on the open sea, with crew members on deck and personal items inside the cabin
+3D scene viewer built with OpenGL 3.3 (core profile) and Python.
+Renders a One Piece-themed environment: the Going Merry ship on the open sea, with crew members on deck and personal items inside the cabin.
+
+Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects.
 
 ## Requirements
 
@@ -23,6 +25,12 @@ source venv/bin/activate
 python main.py
 ```
 
+## Project Docs
+
+- Asset catalog: `docs/catalog/assets.md`
+- Projeto 2 spec: `docs/project_specs/projeto2.md`
+- Projeto 3 spec: `docs/project_specs/projeto3.md`
+
 ## Controls
 
 | Key / Input  | Action                                                       |
@@ -35,16 +43,17 @@ python main.py
 | `R`          | Reset camera to starting position                            |
 | `M`          | Mute / unmute background music (red badge appears when muted)|
 | `ESC`        | Pause / unpause (also pauses music)                          |
+| `L`          | Toggle the external sun light                                |
+| `I`          | Toggle ambient light                                         |
+| `Z` / `X`    | Decrease / increase ambient light intensity                  |
+| `C` / `V`    | Decrease / increase diffuse reflection                       |
+| `B` / `N`    | Decrease / increase specular reflection                      |
+| `J` / `K`    | Translate the sun manually around the ship                   |
 
-### Transformações dos Personagens
+### Projeto 3 - Etapa externa
 
-| Tecla | Personagem | Transformação |
-|-------|------------|---------------|
-| `1` | **Luffy** | Aumentar escala (uniforme, máx. 3.0×) |
-| `2` | **Luffy** | Diminuir escala (uniforme, mín. 0.3×) |
-| `3` | **Franky** | Rotação no eixo Y (sentido anti-horário) |
-| `4` | **Franky** | Rotação no eixo Y (sentido horário) |
-| `5` | **Tony Tony Chopper** | Translação +X (máx. +3.0) |
-| `6` | **Tony Tony Chopper** | Translação −X (mín. −3.0) |
-| `7` | **Tony Tony Chopper** | Translação +Z (máx. +3.0) |
-| `8` | **Tony Tony Chopper** | Translação −Z (mín. −3.0) |
+- The procedural sun disk was removed from the skybox.
+- `modelos/sun/source/Sun.obj` is rendered as a distant keyboard-controlled external object.
+- `modelos/sun/textures/sun_surface.png` is applied to the sun through `Sun.mtl`.
+- The sun object stays high above the sea and emits a strong external light. That light affects only objects marked as external: ship, deck characters/items, treasure, barrel, Brook, Franky, and ocean.
+- Cabin objects keep their own lighting parameters but do not receive the external sun light in this stage.

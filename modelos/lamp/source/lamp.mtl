@@ -1,0 +1,9 @@
+# Materials recovered for the Lamp OBJ.
+# The original upload included PBR texture maps but no MTL file.
+
+newmtl aiLambert1SG
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.250000 0.250000 0.250000
+Ns 64.000000
+map_Kd lamptp1_lambert1_BaseColor.png

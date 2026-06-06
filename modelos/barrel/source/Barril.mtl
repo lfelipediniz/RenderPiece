@@ -1,0 +1,8 @@
+# Material recovered for the barrel OBJ.
+
+newmtl wire_177088026
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.120000 0.100000 0.080000
+Ns 18.000000
+map_Kd texture-wooden-barrel-background-closeup-600nw-2315911823.webp

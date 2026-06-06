@@ -1,7 +1,8 @@
-"""Programa de shader padrao usado pelos modelos da cena
+"""Programa de shader padrao usado pelos modelos da cena.
 
-Apenas amostra a textura difusa e multiplica pela cor `Kd` do material
-Nao ha calculo de iluminacao, conforme requisito 12 do projeto
+Projeto 3: aplica iluminacao ambiente, difusa e especular pelo pipeline
+moderno. Os coeficientes de iluminacao sao enviados por objeto, nao lidos do
+`.mtl`; o material do OBJ fica restrito a textura/tint visual.
 """
 
 from OpenGL.GL import (
@@ -37,11 +38,18 @@ uniform mat4 u_view;
 uniform mat4 u_projection;
 
 out vec2 v_texcoord;
+out vec3 v_world_position;
+out vec3 v_world_normal;
 
 void main()
 {
     v_texcoord = a_texcoord;
-    gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);
+
+    vec4 world_position = u_model * vec4(a_position, 1.0);
+    v_world_position = world_position.xyz;
+    v_world_normal = mat3(transpose(inverse(u_model))) * a_normal;
+
+    gl_Position = u_projection * u_view * world_position;
 }
 """
 
@@ -50,15 +58,72 @@ FRAGMENT_SHADER = """
 #version 330 core
 
 in vec2 v_texcoord;
+in vec3 v_world_position;
+in vec3 v_world_normal;
 
 uniform sampler2D u_texture;
-uniform vec3 u_diffuse;
+uniform vec3 u_tint;
+
+uniform vec3 u_camera_position;
+
+uniform bool u_ambient_enabled;
+uniform vec3 u_ambient_color;
+uniform float u_ambient_strength;
+
+uniform bool u_external_light_enabled;
+uniform bool u_receives_external_light;
+uniform vec3 u_external_light_position;
+uniform vec3 u_external_light_color;
+uniform float u_external_light_intensity;
+
+uniform float u_diffuse_strength;
+uniform float u_specular_strength;
+
+uniform vec3 u_material_ambient;
+uniform vec3 u_material_diffuse;
+uniform vec3 u_material_specular;
+uniform float u_material_shininess;
+uniform vec3 u_material_emissive;
 
 out vec4 frag_color;
 
 void main()
 {
-    frag_color = texture(u_texture, v_texcoord) * vec4(u_diffuse, 1.0);
+    vec4 texel = texture(u_texture, v_texcoord);
+    vec3 albedo = texel.rgb * u_tint;
+    vec3 normal = normalize(v_world_normal);
+
+    vec3 color = u_material_emissive;
+
+    if (u_ambient_enabled) {
+        color += albedo * u_material_ambient * u_ambient_color * u_ambient_strength;
+    }
+
+    if (u_external_light_enabled && u_receives_external_light) {
+        vec3 to_light = u_external_light_position - v_world_position;
+        float distance_to_light = length(to_light);
+        vec3 light_dir = normalize(to_light);
+        vec3 view_dir = normalize(u_camera_position - v_world_position);
+        vec3 halfway_dir = normalize(light_dir + view_dir);
+
+        float attenuation = u_external_light_intensity /
+            (1.0 + 0.0015 * distance_to_light * distance_to_light);
+
+        float diffuse_factor = max(dot(normal, light_dir), 0.0);
+        vec3 diffuse = albedo * u_material_diffuse * u_external_light_color *
+            diffuse_factor * u_diffuse_strength;
+
+        float specular_factor = pow(
+            max(dot(normal, halfway_dir), 0.0),
+            u_material_shininess
+        );
+        vec3 specular = u_material_specular * u_external_light_color *
+            specular_factor * u_specular_strength;
+
+        color += (diffuse + specular) * attenuation;
+    }
+
+    frag_color = vec4(color, texel.a);
 }
 """
 
@@ -84,7 +149,23 @@ class ShaderProgram:
             "u_view": glGetUniformLocation(self.program, "u_view"),
             "u_projection": glGetUniformLocation(self.program, "u_projection"),
             "u_texture": glGetUniformLocation(self.program, "u_texture"),
-            "u_diffuse": glGetUniformLocation(self.program, "u_diffuse"),
+            "u_tint": glGetUniformLocation(self.program, "u_tint"),
+            "u_camera_position": glGetUniformLocation(self.program, "u_camera_position"),
+            "u_ambient_enabled": glGetUniformLocation(self.program, "u_ambient_enabled"),
+            "u_ambient_color": glGetUniformLocation(self.program, "u_ambient_color"),
+            "u_ambient_strength": glGetUniformLocation(self.program, "u_ambient_strength"),
+            "u_external_light_enabled": glGetUniformLocation(self.program, "u_external_light_enabled"),
+            "u_receives_external_light": glGetUniformLocation(self.program, "u_receives_external_light"),
+            "u_external_light_position": glGetUniformLocation(self.program, "u_external_light_position"),
+            "u_external_light_color": glGetUniformLocation(self.program, "u_external_light_color"),
+            "u_external_light_intensity": glGetUniformLocation(self.program, "u_external_light_intensity"),
+            "u_diffuse_strength": glGetUniformLocation(self.program, "u_diffuse_strength"),
+            "u_specular_strength": glGetUniformLocation(self.program, "u_specular_strength"),
+            "u_material_ambient": glGetUniformLocation(self.program, "u_material_ambient"),
+            "u_material_diffuse": glGetUniformLocation(self.program, "u_material_diffuse"),
+            "u_material_specular": glGetUniformLocation(self.program, "u_material_specular"),
+            "u_material_shininess": glGetUniformLocation(self.program, "u_material_shininess"),
+            "u_material_emissive": glGetUniformLocation(self.program, "u_material_emissive"),
         }
 
     @staticmethod
@@ -100,4 +181,3 @@ class ShaderProgram:
 
     def use(self) -> None:
         glUseProgram(self.program)
-

@@ -1,4 +1,4 @@
-"""Oceano animado para o ambiente externo
+"""Oceano animado para o ambiente externo.
 
 Atende ao requisito 1 do projeto (o ambiente externo cita "oceano" como exemplo)
 e ao requisito 6 (todo ambiente externo deve ter piso/chão; aqui o piso é a
@@ -9,10 +9,8 @@ Implementação:
     numpy e enviada para a GPU em um único VAO/VBO/EBO.
   - Um shader dedicado desloca cada vértice no eixo Y somando algumas senóides
     direcionais animadas pelo tempo, criando ondas em movimento.
-  - A cor do fragment é definida por uma mistura entre azul-profundo, azul-médio
-    e branco da crista, controlada pela altura instantânea da onda. **Não há
-    cálculo de iluminação** (proibido pelo requisito 12); o efeito de "brilho"
-    nas cristas vem apenas dessa interpolação por altura.
+  - Projeto 3: a agua tem parametros proprios de reflexao ambiente/difusa/
+    especular e recebe somente a fonte luminosa externa.
 """
 
 from __future__ import annotations
@@ -57,10 +55,14 @@ from OpenGL.GL import (
     glPolygonMode,
     glShaderSource,
     glUniform1f,
+    glUniform1i,
+    glUniform3f,
     glUniformMatrix4fv,
     glUseProgram,
     glVertexAttribPointer,
 )
+
+from .lighting import EXTERNAL_LIGHT_INTENSITY, LightingProfile, LightingState
 
 
 OCEAN_VERTEX_SHADER = """
@@ -74,6 +76,8 @@ uniform mat4 u_projection;
 uniform float u_time;
 
 out float v_height;
+out vec3 v_world_position;
+out vec3 v_world_normal;
 
 // Soma de uma onda senoidal direcional. `dir` é unitário, `wavelength` em
 // unidades de mundo, `amp` em unidades de mundo, `speed` em rad/s.
@@ -83,19 +87,40 @@ float wave(vec2 pos, vec2 dir, float wavelength, float amp, float speed, float t
     return amp * sin(dot(pos, dir) * k - speed * t);
 }
 
+vec2 wave_slope(vec2 pos, vec2 dir, float wavelength, float amp, float speed, float t)
+{
+    float k = 6.2831853 / wavelength;
+    float phase = dot(pos, dir) * k - speed * t;
+    return amp * k * cos(phase) * dir;
+}
+
 void main()
 {
     vec4 world = u_model * vec4(a_position, 1.0);
 
     // Várias ondas em direções diferentes para evitar padrões óbvios.
     float h = 0.0;
-    h += wave(world.xz, normalize(vec2( 1.00,  0.35)), 22.0, 0.45, 0.55, u_time);
-    h += wave(world.xz, normalize(vec2(-0.40,  1.00)), 13.0, 0.22, 0.85, u_time);
-    h += wave(world.xz, normalize(vec2( 0.70, -0.80)),  7.5, 0.10, 1.30, u_time);
-    h += wave(world.xz, normalize(vec2(-0.95, -0.20)),  4.5, 0.05, 1.80, u_time);
+    vec2 slope = vec2(0.0);
+
+    vec2 d0 = normalize(vec2( 1.00,  0.35));
+    vec2 d1 = normalize(vec2(-0.40,  1.00));
+    vec2 d2 = normalize(vec2( 0.70, -0.80));
+    vec2 d3 = normalize(vec2(-0.95, -0.20));
+
+    h += wave(world.xz, d0, 22.0, 0.45, 0.55, u_time);
+    h += wave(world.xz, d1, 13.0, 0.22, 0.85, u_time);
+    h += wave(world.xz, d2,  7.5, 0.10, 1.30, u_time);
+    h += wave(world.xz, d3,  4.5, 0.05, 1.80, u_time);
+
+    slope += wave_slope(world.xz, d0, 22.0, 0.45, 0.55, u_time);
+    slope += wave_slope(world.xz, d1, 13.0, 0.22, 0.85, u_time);
+    slope += wave_slope(world.xz, d2,  7.5, 0.10, 1.30, u_time);
+    slope += wave_slope(world.xz, d3,  4.5, 0.05, 1.80, u_time);
 
     world.y += h;
     v_height = h;
+    v_world_position = world.xyz;
+    v_world_normal = normalize(vec3(-slope.x, 1.0, -slope.y));
 
     gl_Position = u_projection * u_view * world;
 }
@@ -106,23 +131,80 @@ OCEAN_FRAGMENT_SHADER = """
 #version 330 core
 
 in float v_height;
+in vec3 v_world_position;
+in vec3 v_world_normal;
+
+uniform vec3 u_camera_position;
+
+uniform bool u_ambient_enabled;
+uniform vec3 u_ambient_color;
+uniform float u_ambient_strength;
+
+uniform bool u_external_light_enabled;
+uniform vec3 u_external_light_position;
+uniform vec3 u_external_light_color;
+uniform float u_external_light_intensity;
+
+uniform float u_diffuse_strength;
+uniform float u_specular_strength;
+
+uniform vec3 u_material_ambient;
+uniform vec3 u_material_diffuse;
+uniform vec3 u_material_specular;
+uniform float u_material_shininess;
 
 out vec4 frag_color;
 
 void main()
 {
-    // Cor de base uniforme para o mar (sem iluminação, conforme requisito 12).
-    // Apenas as cristas mais altas recebem um leve realce esbranquiçado, sem
-    // escurecer os vales — assim não aparecem "manchas" escuras na superfície.
     vec3 base  = vec3(0.070, 0.32, 0.52);
     vec3 crest = vec3(0.78, 0.92, 0.98);
 
     float crest_strength = smoothstep(0.55, 0.80, v_height) * 0.35;
-    vec3 color = mix(base, crest, crest_strength);
+    vec3 albedo = mix(base, crest, crest_strength);
+
+    vec3 normal = normalize(v_world_normal);
+    vec3 color = vec3(0.0);
+
+    if (u_ambient_enabled) {
+        color += albedo * u_material_ambient * u_ambient_color * u_ambient_strength;
+    }
+
+    if (u_external_light_enabled) {
+        vec3 to_light = u_external_light_position - v_world_position;
+        float distance_to_light = length(to_light);
+        vec3 light_dir = normalize(to_light);
+        vec3 view_dir = normalize(u_camera_position - v_world_position);
+        vec3 halfway_dir = normalize(light_dir + view_dir);
+
+        float attenuation = u_external_light_intensity /
+            (1.0 + 0.0010 * distance_to_light * distance_to_light);
+
+        float diffuse_factor = max(dot(normal, light_dir), 0.0);
+        vec3 diffuse = albedo * u_material_diffuse * u_external_light_color *
+            diffuse_factor * u_diffuse_strength;
+
+        float specular_factor = pow(
+            max(dot(normal, halfway_dir), 0.0),
+            u_material_shininess
+        );
+        vec3 specular = u_material_specular * u_external_light_color *
+            specular_factor * u_specular_strength;
+
+        color += (diffuse + specular) * attenuation;
+    }
 
     frag_color = vec4(color, 1.0);
 }
 """
+
+
+OCEAN_LIGHTING = LightingProfile(
+    ambient=(0.45, 0.60, 0.68),
+    diffuse=(0.64, 0.78, 0.88),
+    specular=(0.82, 0.92, 1.00),
+    shininess=96.0,
+)
 
 
 def _compile_shader(shader_type: int, source: str) -> int:
@@ -181,6 +263,20 @@ class Ocean:
         self._u_view = glGetUniformLocation(self.program, "u_view")
         self._u_projection = glGetUniformLocation(self.program, "u_projection")
         self._u_time = glGetUniformLocation(self.program, "u_time")
+        self._u_camera_position = glGetUniformLocation(self.program, "u_camera_position")
+        self._u_ambient_enabled = glGetUniformLocation(self.program, "u_ambient_enabled")
+        self._u_ambient_color = glGetUniformLocation(self.program, "u_ambient_color")
+        self._u_ambient_strength = glGetUniformLocation(self.program, "u_ambient_strength")
+        self._u_external_light_enabled = glGetUniformLocation(self.program, "u_external_light_enabled")
+        self._u_external_light_position = glGetUniformLocation(self.program, "u_external_light_position")
+        self._u_external_light_color = glGetUniformLocation(self.program, "u_external_light_color")
+        self._u_external_light_intensity = glGetUniformLocation(self.program, "u_external_light_intensity")
+        self._u_diffuse_strength = glGetUniformLocation(self.program, "u_diffuse_strength")
+        self._u_specular_strength = glGetUniformLocation(self.program, "u_specular_strength")
+        self._u_material_ambient = glGetUniformLocation(self.program, "u_material_ambient")
+        self._u_material_diffuse = glGetUniformLocation(self.program, "u_material_diffuse")
+        self._u_material_specular = glGetUniformLocation(self.program, "u_material_specular")
+        self._u_material_shininess = glGetUniformLocation(self.program, "u_material_shininess")
 
         # O modelo é simplesmente uma translação para a linha d'água.
         model = np.identity(4, dtype=np.float32)
@@ -220,7 +316,16 @@ class Ocean:
         glBindVertexArray(0)
         return vao, vbo, ebo
 
-    def draw(self, view: np.ndarray, projection: np.ndarray, time_seconds: float, wireframe: bool) -> None:
+    def draw(
+        self,
+        view: np.ndarray,
+        projection: np.ndarray,
+        time_seconds: float,
+        wireframe: bool,
+        lighting: LightingState,
+        camera_position: np.ndarray,
+        external_light_position: np.ndarray,
+    ) -> None:
         """Desenha o oceano. Deve ser chamado depois dos objetos opacos da cena
         e antes do skybox (para que o skybox preencha apenas o que sobrar)."""
         glUseProgram(self.program)
@@ -233,6 +338,23 @@ class Ocean:
         glUniformMatrix4fv(self._u_view, 1, GL_TRUE, view)
         glUniformMatrix4fv(self._u_projection, 1, GL_TRUE, projection)
         glUniform1f(self._u_time, float(time_seconds))
+        glUniform3f(self._u_camera_position, *camera_position)
+
+        glUniform1i(self._u_ambient_enabled, int(lighting.ambient_enabled))
+        glUniform3f(self._u_ambient_color, 0.95, 0.98, 1.00)
+        glUniform1f(self._u_ambient_strength, lighting.ambient_strength)
+
+        glUniform1i(self._u_external_light_enabled, int(lighting.external_light_enabled))
+        glUniform3f(self._u_external_light_position, *external_light_position)
+        glUniform3f(self._u_external_light_color, 1.00, 0.86, 0.54)
+        glUniform1f(self._u_external_light_intensity, EXTERNAL_LIGHT_INTENSITY)
+
+        glUniform1f(self._u_diffuse_strength, lighting.diffuse_strength)
+        glUniform1f(self._u_specular_strength, lighting.specular_strength)
+        glUniform3f(self._u_material_ambient, *OCEAN_LIGHTING.ambient)
+        glUniform3f(self._u_material_diffuse, *OCEAN_LIGHTING.diffuse)
+        glUniform3f(self._u_material_specular, *OCEAN_LIGHTING.specular)
+        glUniform1f(self._u_material_shininess, OCEAN_LIGHTING.shininess)
 
         glBindVertexArray(self.vao)
         glDrawElements(GL_TRIANGLES, self.index_count, GL_UNSIGNED_INT, ctypes.c_void_p(0))

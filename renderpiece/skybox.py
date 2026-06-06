@@ -151,18 +151,6 @@ _SKYBOX_VERTICES = np.array(
 )
 
 
-# Direção do sol no espaço-mundo (será normalizada). Escolhida para ficar
-# visível para o jogador no spawn (câmera em z>0 olhando para -z).
-_SUN_DIRECTION = np.array([0.25, 0.35, -0.9], dtype=np.float32)
-
-
-def _normalize(v: np.ndarray) -> np.ndarray:
-    norm = float(np.linalg.norm(v))
-    if norm <= 1e-8:
-        return v
-    return v / norm
-
-
 def _face_directions(face_index: int, size: int) -> np.ndarray:
     """Calcula vetores de direção 3D para cada texel de uma face do cubemap.
 
@@ -210,18 +198,6 @@ def _sky_color(directions: np.ndarray) -> np.ndarray:
     upper = horizon + (zenith - horizon) * (t_above ** 0.7)
     lower = horizon + (ocean - horizon) * (t_below ** 0.6)
     color = np.where(above, upper, lower)
-
-    sun_dir = _normalize(_SUN_DIRECTION).astype(np.float32)
-    sun_dot = np.sum(dirs * sun_dir, axis=-1, keepdims=True)
-
-    halo_color = np.array([1.00, 0.90, 0.72], dtype=np.float32)
-    sun_color = np.array([1.00, 0.97, 0.88], dtype=np.float32)
-
-    halo_strength = np.clip((sun_dot - 0.92) / 0.08, 0.0, 1.0) ** 4
-    disk_strength = np.clip((sun_dot - 0.998) / 0.002, 0.0, 1.0)
-
-    color = color * (1.0 - halo_strength) + halo_color * halo_strength
-    color = color * (1.0 - disk_strength) + sun_color * disk_strength
 
     return np.clip(color, 0.0, 1.0)
 

@@ -1,0 +1,8 @@
+# Material recovered for the wooden table OBJ.
+
+newmtl initialShadingGroup
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.180000 0.140000 0.100000
+Ns 16.000000
+map_Kd desk_UV02_desk_BaseColor.png

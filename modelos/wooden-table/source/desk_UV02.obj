@@ -1,5 +1,5 @@
 #File written by RizomUV 2022.0.11.g5424fda. Compilation :Nov 24 2021,04:16:21
-mtllib desk_noUV:mtl
+mtllib desk_UV02.mtl
 #begin vertices
 v -5.789398 70.03914 -19.11894
 v -5.874207 69.62288 -19.11894

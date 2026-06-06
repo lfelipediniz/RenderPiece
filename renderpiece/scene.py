@@ -1,21 +1,23 @@
-"""Montagem da cena One Piece (cumpre requisitos 1, 2, 3, 5)
+"""Montagem da cena One Piece (Projeto 2 + primeira etapa do Projeto 3).
 
 Cada `load_*` carrega um `.obj` distinto via `load_obj_mesh` (req 4) e
 `build_scene` posiciona os modelos com `compose_transform`, separando o
 ambiente externo (proa/conves do Going Merry sobre o oceano) do interno
-(cabine: cama, mesa, Brook, Chopper). O ambiente em si (Going Merry)
-delimita os dois e nao conta para os 6 modelos exigidos
+(cabine: cama, mesa, Chopper).
+
+Projeto 3: objetos externos recebem a fonte de luz do sol; objetos internos
+nao recebem essa fonte. Cada objeto tem perfil proprio de reflexao difusa e
+especular, independente dos parametros vindos dos arquivos `.mtl`.
 """
 
-import math
 from dataclasses import dataclass
 from typing import Callable
 import numpy as np
 from .config import ASSET_ROOT
+from .lighting import LightingProfile, LightingState, SUN_MODEL_SCALE, sun_base_position
 from .math3d import compose_transform
 from .mesh import GpuMesh
 from .obj_loader import load_obj_mesh
-from .state import UserTransforms
 from .textures import TextureCache
 
 
@@ -31,13 +33,97 @@ class SceneObject:
     name: str
     mesh: GpuMesh
     model_factory: Callable[[float], np.ndarray]
+    lighting: LightingProfile
+    receives_external_light: bool
+    external_light_source: bool = False
 
     def model_matrix(self, elapsed: float) -> np.ndarray:
         return self.model_factory(elapsed) @ self.mesh.anchor_to_base
 
+    def emissive(self, external_light_enabled: bool) -> tuple[float, float, float]:
+        if self.external_light_source and not external_light_enabled:
+            return self.lighting.emissive_off
+        return self.lighting.emissive
 
-def static_object(mesh: GpuMesh, matrix: np.ndarray, name: str) -> SceneObject:
-    return SceneObject(name, mesh, lambda _elapsed, m=matrix: m)
+
+def static_object(
+    mesh: GpuMesh,
+    matrix: np.ndarray,
+    name: str,
+    lighting: LightingProfile,
+    receives_external_light: bool,
+) -> SceneObject:
+    return SceneObject(name, mesh, lambda _elapsed, m=matrix: m, lighting, receives_external_light)
+
+
+SHIP_LIGHTING = LightingProfile(
+    ambient=(0.70, 0.66, 0.58),
+    diffuse=(0.88, 0.80, 0.70),
+    specular=(0.34, 0.30, 0.24),
+    shininess=28.0,
+)
+SKIN_LIGHTING = LightingProfile(
+    ambient=(0.72, 0.62, 0.56),
+    diffuse=(0.96, 0.82, 0.72),
+    specular=(0.22, 0.18, 0.16),
+    shininess=18.0,
+)
+NAMI_LIGHTING = LightingProfile(
+    ambient=(0.70, 0.60, 0.56),
+    diffuse=(0.94, 0.78, 0.68),
+    specular=(0.30, 0.24, 0.20),
+    shininess=22.0,
+)
+FRANKY_LIGHTING = LightingProfile(
+    ambient=(0.64, 0.68, 0.72),
+    diffuse=(0.80, 0.84, 0.90),
+    specular=(0.64, 0.66, 0.70),
+    shininess=44.0,
+)
+GOLD_LIGHTING = LightingProfile(
+    ambient=(0.84, 0.70, 0.34),
+    diffuse=(1.00, 0.82, 0.32),
+    specular=(1.00, 0.86, 0.44),
+    shininess=70.0,
+)
+WOOD_LIGHTING = LightingProfile(
+    ambient=(0.62, 0.46, 0.30),
+    diffuse=(0.76, 0.52, 0.34),
+    specular=(0.20, 0.15, 0.10),
+    shininess=18.0,
+)
+BED_LIGHTING = LightingProfile(
+    ambient=(0.64, 0.58, 0.52),
+    diffuse=(0.72, 0.64, 0.58),
+    specular=(0.10, 0.10, 0.10),
+    shininess=12.0,
+)
+BROOK_LIGHTING = LightingProfile(
+    ambient=(0.66, 0.66, 0.62),
+    diffuse=(0.82, 0.82, 0.76),
+    specular=(0.35, 0.35, 0.32),
+    shininess=34.0,
+)
+TABLE_LIGHTING = LightingProfile(
+    ambient=(0.58, 0.42, 0.27),
+    diffuse=(0.70, 0.46, 0.28),
+    specular=(0.18, 0.13, 0.08),
+    shininess=16.0,
+)
+CHOPPER_LIGHTING = LightingProfile(
+    ambient=(0.72, 0.58, 0.56),
+    diffuse=(0.90, 0.68, 0.64),
+    specular=(0.20, 0.16, 0.16),
+    shininess=20.0,
+)
+SUN_LIGHTING = LightingProfile(
+    ambient=(1.00, 0.72, 0.30),
+    diffuse=(1.00, 0.86, 0.36),
+    specular=(0.00, 0.00, 0.00),
+    shininess=1.0,
+    emissive=(1.65, 0.86, 0.18),
+    emissive_off=(0.12, 0.06, 0.02),
+)
 
 
 def load_ship(textures: TextureCache) -> GpuMesh:
@@ -159,7 +245,19 @@ def load_barrel(textures: TextureCache) -> GpuMesh:
     )
 
 
-def build_scene(textures: TextureCache, transforms: UserTransforms) -> list[SceneObject]:
+def load_sun(textures: TextureCache) -> GpuMesh:
+    sun_texture = ASSET_ROOT / "sun/textures/sun_surface.png"
+    return load_obj_mesh(
+        "External sun light source",
+        ASSET_ROOT / "sun/source/Sun.obj",
+        textures,
+        fallback_texture=textures.from_file(sun_texture),
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+
+
+def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     nami = load_nami(textures)
@@ -170,15 +268,30 @@ def build_scene(textures: TextureCache, transforms: UserTransforms) -> list[Scen
     brook = load_brook(textures)
     old_wooden_table = load_old_wooden_table(textures)
     tony_chopper = load_tony_chopper(textures)
+    sun = load_sun(textures)
 
     # bitcoin_pile e instanciado varias vezes para encher o tesouro do navio;
     # conta como UM modelo (req 2: repeticoes nao somam)
 
     return [
+        SceneObject(
+            "Translating sun light source",
+            sun,
+            lambda _elapsed: compose_transform(
+                tuple(sun_base_position(lighting_state.sun_orbit_angle)),
+                rotation=(0.0, 0.0, 0.0),
+                object_scale=SUN_MODEL_SCALE,
+            ),
+            SUN_LIGHTING,
+            False,
+            external_light_source=True,
+        ),
         static_object(
             ship,
             compose_transform((0.0, 0.0, 0.0), rotation=(0.0, 0.0, 0.0), object_scale=0.01),
             "Ship",
+            SHIP_LIGHTING,
+            True,
         ),
         SceneObject(
             "Luffy on prow",
@@ -186,125 +299,163 @@ def build_scene(textures: TextureCache, transforms: UserTransforms) -> list[Scen
             lambda _elapsed: compose_transform(
                 (0.0, 11.92, 10.60),
                 rotation=(0.0, 0.0, 0.0),
-                object_scale=0.013 * transforms.luffy_scale,
+                object_scale=0.013,
             ),
+            SKIN_LIGHTING,
+            True,
         ),
         static_object(
             nami,
             compose_transform((0.0, 19.40, 1.00), rotation=(0.0, 0.0, 0.0), object_scale=1.0),
             "Nami on prow",
+            NAMI_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.0, 5.80, -1.25), rotation=(0.0, 20.0, 0.0), object_scale=0.038),
             "Bitcoin pile 1",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.55, 5.80, -1.50), rotation=(0.0, 75.0, 0.0), object_scale=0.036),
             "Bitcoin pile 2",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.50, 5.80, -0.90), rotation=(0.0, -40.0, 0.0), object_scale=0.037),
             "Bitcoin pile 3",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.20, 5.80, -2.00), rotation=(0.0, 130.0, 0.0), object_scale=0.035),
             "Bitcoin pile 4",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.25, 5.95, -1.30), rotation=(0.0, 55.0, 0.0), object_scale=0.034),
             "Bitcoin pile 5 (top)",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.80, 5.80, -0.70), rotation=(0.0, 10.0, 0.0), object_scale=0.037),
             "Bitcoin pile 6",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.80, 5.80, -1.80), rotation=(0.0, 165.0, 0.0), object_scale=0.036),
             "Bitcoin pile 7",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.40, 5.80, -0.50), rotation=(0.0, -85.0, 0.0), object_scale=0.035),
             "Bitcoin pile 8",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.10, 5.80, -2.40), rotation=(0.0, 200.0, 0.0), object_scale=0.036),
             "Bitcoin pile 9",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((1.00, 5.80, -1.80), rotation=(0.0, 45.0, 0.0), object_scale=0.035),
             "Bitcoin pile 10",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-1.00, 5.80, -0.60), rotation=(0.0, 110.0, 0.0), object_scale=0.036),
             "Bitcoin pile 11",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.65, 5.95, -1.20), rotation=(0.0, 90.0, 0.0), object_scale=0.033),
             "Bitcoin pile 12 (top)",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.55, 5.95, -1.70), rotation=(0.0, -20.0, 0.0), object_scale=0.033),
             "Bitcoin pile 13 (top)",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((0.10, 6.08, -1.40), rotation=(0.0, 35.0, 0.0), object_scale=0.031),
             "Bitcoin pile 14 (peak)",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bitcoin_pile,
             compose_transform((-0.30, 5.80, -0.30), rotation=(0.0, -60.0, 0.0), object_scale=0.036),
             "Bitcoin pile 15",
+            GOLD_LIGHTING,
+            True,
         ),
         static_object(
             bed,
             compose_transform((2.10, 7.80, -6.20), rotation=(0.0, 0.0, 0.0), object_scale=0.5),
             "Bed",
+            BED_LIGHTING,
+            False,
         ),
         static_object(
             barrel,
             compose_transform((-2.65, 5.90, -3.00), rotation=(0.0, -18.0, 0.0), object_scale=0.011),
             "Barrel on lower deck",
+            WOOD_LIGHTING,
+            True,
         ),
-        SceneObject(
-            "Franky",
+        static_object(
             franky,
-            lambda _elapsed: compose_transform(
-                (3.00, 5.90, -1.00),
-                rotation=(0.0, -108.0 + math.degrees(transforms.franky_rotation_y), 0.0),
-                object_scale=0.011,
-            ),
+            compose_transform((3.00, 5.90, -1.00), rotation=(0.0, -108.0, 0.0), object_scale=0.011),
+            "Franky",
+            FRANKY_LIGHTING,
+            True,
         ),
         static_object(
             brook,
             compose_transform((-3.75, 7.80, -5.05), rotation=(0.0, 55.0, 0.0), object_scale=1.0),
             "Brook",
+            BROOK_LIGHTING,
+            True,
         ),
         static_object(
             old_wooden_table,
             compose_transform((0.30, 7.80, -8.30), rotation=(0.0, 0.0, 0.0), object_scale=0.015),
             "Old wooden table",
+            TABLE_LIGHTING,
+            False,
         ),
-        SceneObject(
-            "Tony Chopper next to desk",
+        static_object(
             tony_chopper,
-            lambda _elapsed: compose_transform(
-                (-1.00 + transforms.chopper_offset_x, 7.80, -7.50 + transforms.chopper_offset_z),
-                rotation=(0.0, 45.0, 0.0),
-                object_scale=0.02,
-            ),
+            compose_transform((-1.00, 7.80, -7.50), rotation=(0.0, 45.0, 0.0), object_scale=0.02),
+            "Tony Chopper next to desk",
+            CHOPPER_LIGHTING,
+            False,
         ),
     ]
