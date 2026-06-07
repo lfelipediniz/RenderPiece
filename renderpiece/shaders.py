@@ -82,6 +82,11 @@ uniform vec3 u_internal_light_position;
 uniform vec3 u_internal_light_color;
 uniform float u_internal_light_intensity;
 
+uniform bool u_lamp_light_enabled;
+uniform vec3 u_lamp_light_position;
+uniform vec3 u_lamp_light_color;
+uniform float u_lamp_light_intensity;
+
 uniform float u_diffuse_strength;
 uniform float u_specular_strength;
 
@@ -179,6 +184,17 @@ void main()
         normal
     );
 
+    color += point_light(
+        u_lamp_light_enabled,
+        u_receives_internal_light,
+        u_lamp_light_position,
+        u_lamp_light_color,
+        u_lamp_light_intensity,
+        0.22,
+        albedo,
+        normal
+    );
+
     frag_color = vec4(color, texel.a);
 }
 """
@@ -220,6 +236,10 @@ class ShaderProgram:
             "u_internal_light_position": glGetUniformLocation(self.program, "u_internal_light_position"),
             "u_internal_light_color": glGetUniformLocation(self.program, "u_internal_light_color"),
             "u_internal_light_intensity": glGetUniformLocation(self.program, "u_internal_light_intensity"),
+            "u_lamp_light_enabled": glGetUniformLocation(self.program, "u_lamp_light_enabled"),
+            "u_lamp_light_position": glGetUniformLocation(self.program, "u_lamp_light_position"),
+            "u_lamp_light_color": glGetUniformLocation(self.program, "u_lamp_light_color"),
+            "u_lamp_light_intensity": glGetUniformLocation(self.program, "u_lamp_light_intensity"),
             "u_diffuse_strength": glGetUniformLocation(self.program, "u_diffuse_strength"),
             "u_specular_strength": glGetUniformLocation(self.program, "u_specular_strength"),
             "u_material_ambient": glGetUniformLocation(self.program, "u_material_ambient"),

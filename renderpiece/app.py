@@ -10,6 +10,7 @@ Mapa de teclas:
   P -> wireframe; R -> reseta camera; M -> muta musica; ESC -> pausa
   L -> liga/desliga fonte externa (sol); I -> liga/desliga luz ambiente
   F -> liga/desliga fonte interna do Firefly
+  O -> liga/desliga fonte interna da lamp
   Z/X -> decrementa/incrementa ambiente
   C/V -> decrementa/incrementa reflexao difusa
   B/N -> decrementa/incrementa reflexao especular
@@ -41,7 +42,13 @@ from OpenGL.GL import (
 from .audio import BackgroundMusic
 from .camera import Camera
 from .config import ASSET_ROOT, OCEAN_Y, WINDOW_HEIGHT, WINDOW_WIDTH
-from .lighting import FIREFLY_LIGHT_INTENSITY, EXTERNAL_LIGHT_INTENSITY, LightingState, sun_light_position
+from .lighting import (
+    EXTERNAL_LIGHT_INTENSITY,
+    FIREFLY_LIGHT_INTENSITY,
+    LAMP_LIGHT_INTENSITY,
+    LightingState,
+    sun_light_position,
+)
 from .math3d import normalize, perspective
 from .ocean import Ocean
 from .overlay import MutedIndicator, PauseOverlay
@@ -109,6 +116,7 @@ def upload_lighting_uniforms(
     camera_position: np.ndarray,
     external_light_position: np.ndarray,
     firefly_light_position: np.ndarray,
+    lamp_light_position: np.ndarray,
 ) -> None:
     glUniform3f(shader.uniforms["u_camera_position"], *camera_position)
 
@@ -126,8 +134,21 @@ def upload_lighting_uniforms(
     glUniform3f(shader.uniforms["u_internal_light_color"], 0.78, 1.00, 0.34)
     glUniform1f(shader.uniforms["u_internal_light_intensity"], FIREFLY_LIGHT_INTENSITY)
 
+    glUniform1i(shader.uniforms["u_lamp_light_enabled"], int(lighting.lamp_light_enabled))
+    glUniform3f(shader.uniforms["u_lamp_light_position"], *lamp_light_position)
+    glUniform3f(shader.uniforms["u_lamp_light_color"], 1.00, 0.78, 0.42)
+    glUniform1f(shader.uniforms["u_lamp_light_intensity"], LAMP_LIGHT_INTENSITY)
+
     glUniform1f(shader.uniforms["u_diffuse_strength"], lighting.diffuse_strength)
     glUniform1f(shader.uniforms["u_specular_strength"], lighting.specular_strength)
+
+
+def object_emissive_scale(scene_object, lighting: LightingState) -> float:
+    if scene_object.internal_light_name == "firefly":
+        return 1.0 if lighting.firefly_light_enabled else 0.0
+    if scene_object.internal_light_name == "lamp":
+        return 1.0 if lighting.lamp_light_enabled else 0.0
+    return 1.0
 
 
 def init_window() -> glfw._GLFWwindow:
@@ -195,6 +216,9 @@ def run() -> None:
         elif key == glfw.KEY_F:
             lighting.firefly_light_enabled = not lighting.firefly_light_enabled
             print(f"[input] Firefly internal light: {lighting.firefly_light_enabled}")
+        elif key == glfw.KEY_O:
+            lighting.lamp_light_enabled = not lighting.lamp_light_enabled
+            print(f"[input] Lamp internal light: {lighting.lamp_light_enabled}")
 
     glfw.set_cursor_pos_callback(window, mouse_callback)
     glfw.set_key_callback(window, key_callback)
@@ -205,7 +229,8 @@ def run() -> None:
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
     objects = build_scene(textures, lighting)
-    firefly_light_source = next((obj for obj in objects if obj.internal_light_source), None)
+    firefly_light_source = next((obj for obj in objects if obj.internal_light_name == "firefly"), None)
+    lamp_light_source = next((obj for obj in objects if obj.internal_light_name == "lamp"), None)
     skybox = SkyBox()
     ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -244,12 +269,23 @@ def run() -> None:
             if firefly_emissive_region is not None
             else np.zeros(3, dtype=np.float32)
         )
+        lamp_emissive_region = (
+            lamp_light_source.emissive_region(animation_time)
+            if lamp_light_source is not None
+            else None
+        )
+        lamp_light_position = (
+            np.array(lamp_emissive_region[0], dtype=np.float32)
+            if lamp_emissive_region is not None
+            else np.zeros(3, dtype=np.float32)
+        )
         upload_lighting_uniforms(
             shader,
             lighting,
             camera.position,
             external_light_position,
             firefly_light_position,
+            lamp_light_position,
         )
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE if toggles.wireframe else GL_FILL)
@@ -264,7 +300,7 @@ def run() -> None:
                 scene_object.receives_internal_light,
                 scene_object.emissive(lighting.external_light_enabled),
                 scene_object.emissive_region(animation_time),
-                1.0 if not scene_object.internal_light_source or lighting.firefly_light_enabled else 0.0,
+                object_emissive_scale(scene_object, lighting),
             )
 
         # Oceano desenhado depois dos objetos opacos para aproveitar o depth

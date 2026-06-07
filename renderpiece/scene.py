@@ -40,6 +40,7 @@ class SceneObject:
     receives_internal_light: bool = False
     external_light_source: bool = False
     internal_light_source: bool = False
+    internal_light_name: str | None = None
     emissive_region_local_position: tuple[float, float, float] | None = None
     emissive_region_local_radius: float = 0.0
 
@@ -78,6 +79,7 @@ def static_object(
     receives_external_light: bool,
     receives_internal_light: bool = False,
     internal_light_source: bool = False,
+    internal_light_name: str | None = None,
     emissive_region_local_position: tuple[float, float, float] | None = None,
     emissive_region_local_radius: float = 0.0,
 ) -> SceneObject:
@@ -89,6 +91,7 @@ def static_object(
         receives_external_light,
         receives_internal_light=receives_internal_light,
         internal_light_source=internal_light_source,
+        internal_light_name=internal_light_name,
         emissive_region_local_position=emissive_region_local_position,
         emissive_region_local_radius=emissive_region_local_radius,
     )
@@ -148,6 +151,12 @@ TABLE_LIGHTING = LightingProfile(
     specular=(0.18, 0.13, 0.08),
     shininess=16.0,
 )
+LAMP_LIGHTING = LightingProfile(
+    ambient=(0.72, 0.63, 0.48),
+    diffuse=(0.88, 0.78, 0.58),
+    specular=(0.62, 0.52, 0.34),
+    shininess=52.0,
+)
 CHOPPER_LIGHTING = LightingProfile(
     ambient=(0.72, 0.58, 0.56),
     diffuse=(0.90, 0.68, 0.64),
@@ -177,6 +186,8 @@ FIREFLY_SWARM_SPECS = [
     ((0.32, 0.48, 0.22), 5.0, -85.0, 7.1),
     ((-0.18, 0.52, 0.02), 5.3, 105.0, 7.8),
 ]
+LAMP_BULB_LOCAL_POSITION = (1.95, 5.25, 0.0)
+LAMP_BULB_LOCAL_RADIUS = 2.05
 SUN_LIGHTING = LightingProfile(
     ambient=(1.00, 0.72, 0.30),
     diffuse=(1.00, 0.86, 0.36),
@@ -293,6 +304,20 @@ def load_firefly(textures: TextureCache) -> GpuMesh:
     return mesh
 
 
+def load_lamp(textures: TextureCache) -> GpuMesh:
+    mesh = load_obj_mesh(
+        "Table lamp",
+        ASSET_ROOT / "lamp/source/lamp.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+    lamp_material = mesh.materials.get("aiLambert1SG")
+    if lamp_material is not None:
+        lamp_material.emissive = (2.65, 2.08, 0.78)
+    return mesh
+
+
 def make_firefly_swarm(firefly: GpuMesh) -> list[SceneObject]:
     swarm: list[SceneObject] = []
     for index, (offset, firefly_scale, base_yaw, phase) in enumerate(FIREFLY_SWARM_SPECS, start=1):
@@ -330,6 +355,7 @@ def make_firefly_swarm(firefly: GpuMesh) -> list[SceneObject]:
                 False,
                 receives_internal_light=True,
                 internal_light_source=True,
+                internal_light_name="firefly",
                 emissive_region_local_position=FIREFLY_TAIL_LOCAL_POSITION,
                 emissive_region_local_radius=FIREFLY_TAIL_LOCAL_RADIUS,
             )
@@ -388,6 +414,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
     old_wooden_table = load_old_wooden_table(textures)
     tony_chopper = load_tony_chopper(textures)
     firefly = load_firefly(textures)
+    lamp = load_lamp(textures)
     sun = load_sun(textures)
 
     # bitcoin_pile e instanciado varias vezes para encher o tesouro do navio;
@@ -572,6 +599,18 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             TABLE_LIGHTING,
             False,
             receives_internal_light=True,
+        ),
+        static_object(
+            lamp,
+            compose_transform((0.55, 9.29, -8.31), rotation=(0.0, -25.0, 0.0), object_scale=0.083),
+            "Lamp on wooden table",
+            LAMP_LIGHTING,
+            False,
+            receives_internal_light=True,
+            internal_light_source=True,
+            internal_light_name="lamp",
+            emissive_region_local_position=LAMP_BULB_LOCAL_POSITION,
+            emissive_region_local_radius=LAMP_BULB_LOCAL_RADIUS,
         ),
         static_object(
             tony_chopper,

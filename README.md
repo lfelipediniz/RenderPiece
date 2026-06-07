@@ -3,7 +3,7 @@
 3D scene viewer built with OpenGL 3.3 (core profile) and Python.
 Renders a One Piece-themed environment: the Going Merry ship on the open sea, with crew members on deck and personal items inside the cabin.
 
-Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects; a small Firefly swarm is the internal light source around Chopper and only affects cabin objects.
+Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects; a small Firefly swarm and a table lamp are internal light sources and only affect cabin objects.
 
 ## Requirements
 
@@ -45,6 +45,7 @@ python main.py
 | `ESC`        | Pause / unpause (also pauses music)                          |
 | `L`          | Toggle the external sun light                                |
 | `F`          | Toggle the internal Firefly light                            |
+| `O`          | Toggle the internal table lamp light                         |
 | `I`          | Toggle ambient light                                         |
 | `Z` / `X`    | Decrease / increase ambient light intensity                  |
 | `C` / `V`    | Decrease / increase diffuse reflection                       |
@@ -63,5 +64,7 @@ python main.py
 
 - `modelos/firefly/source/firefly.obj` is instanced as a small swarm floating around Chopper's head inside the cabin.
 - Only the abdomen tip of each Firefly is emissive, using an emissive mask around the tail material instead of lighting the whole model.
-- The swarm emits a green-yellow internal point light toggled with `F`.
-- The swarm light affects only cabin objects marked as internal: bed, old wooden table, Chopper, and the Fireflies themselves.
+- `modelos/lamp/source/lamp.obj` is rendered on top of the old wooden table.
+- The upper bulb/shade region of the lamp is emissive, using an emissive mask so the base does not glow.
+- The swarm emits a green-yellow internal point light toggled with `F`; the table lamp emits a warm internal point light toggled with `O`.
+- Both internal lights affect only cabin objects marked as internal: bed, old wooden table, Chopper, the Fireflies, and the lamp.

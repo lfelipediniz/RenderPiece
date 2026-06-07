@@ -23,16 +23,11 @@ projeto. A organizacao padrao e:
 | Bed | Objeto interno | `modelos/bed/source/Bed.obj` | Nao recebe a luz externa nesta etapa. |
 | Old wooden table | Objeto interno | `modelos/wooden-table/source/desk_UV02.obj` | Nao recebe a luz externa nesta etapa. |
 | Firefly | Fonte de luz interna | `modelos/firefly/source/firefly.obj` | Instanciado como enxame pequeno ao redor da cabeca do Chopper; a ponta do abdomen emite luz interna controlada por `F`. |
+| Lamp | Fonte de luz interna | `modelos/lamp/source/lamp.obj` | Fica em cima da mesa de madeira; a regiao da cupula/bulbo emite luz quente controlada por `O`. |
 | Barrel | Objeto externo | `modelos/barrel/source/Barril.obj` | `Barril.mtl` aponta para a textura de madeira. |
 | Bitcoin pile | Tesouro externo | `modelos/bitcoin-pile/source/coins.obj` | Instanciado varias vezes. |
 | Sun | Fonte de luz externa | `modelos/sun/source/Sun.obj` | Controlado por `J`/`K`, textura em `modelos/sun/textures/sun_surface.png`. |
 | Background music | Audio | `modelos/audio/One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3` | Usado por `renderpiece/app.py`. |
-
-## Assets Reservados Para Proximas Etapas
-
-| Asset | Arquivos | Status |
-| --- | --- | --- |
-| Lamp | `modelos/lamp/source/lamp.obj`, `modelos/lamp/textures/*` | Candidato natural para fonte de luz interna. O upload nao tinha `.mtl`; foi criado `lamp.mtl` apontando para a textura BaseColor. |
 
 ## Documentos Do Projeto
 
