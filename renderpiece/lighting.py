@@ -17,6 +17,7 @@ SUN_RADIUS = 4.157928 * SUN_MODEL_SCALE
 SUN_ORBIT_RADIUS = 130.0
 SUN_BASE_HEIGHT = 150.0
 EXTERNAL_LIGHT_INTENSITY = 120.0
+FIREFLY_LIGHT_INTENSITY = 4.75
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,7 @@ class LightingProfile:
 class LightingState:
     ambient_enabled: bool = True
     external_light_enabled: bool = True
+    firefly_light_enabled: bool = True
     ambient_strength: float = 0.28
     diffuse_strength: float = 1.10
     specular_strength: float = 0.75

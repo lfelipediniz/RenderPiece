@@ -76,6 +76,12 @@ uniform vec3 u_external_light_position;
 uniform vec3 u_external_light_color;
 uniform float u_external_light_intensity;
 
+uniform bool u_internal_light_enabled;
+uniform bool u_receives_internal_light;
+uniform vec3 u_internal_light_position;
+uniform vec3 u_internal_light_color;
+uniform float u_internal_light_intensity;
+
 uniform float u_diffuse_strength;
 uniform float u_specular_strength;
 
@@ -85,7 +91,48 @@ uniform vec3 u_material_specular;
 uniform float u_material_shininess;
 uniform vec3 u_material_emissive;
 
+uniform bool u_emissive_region_enabled;
+uniform vec3 u_emissive_region_center;
+uniform float u_emissive_region_radius;
+
 out vec4 frag_color;
+
+vec3 point_light(
+    bool enabled,
+    bool receives_light,
+    vec3 light_position,
+    vec3 light_color,
+    float light_intensity,
+    float attenuation_quadratic,
+    vec3 albedo,
+    vec3 normal
+) {
+    if (!enabled || !receives_light) {
+        return vec3(0.0);
+    }
+
+    vec3 to_light = light_position - v_world_position;
+    float distance_to_light = length(to_light);
+    vec3 light_dir = normalize(to_light);
+    vec3 view_dir = normalize(u_camera_position - v_world_position);
+    vec3 halfway_dir = normalize(light_dir + view_dir);
+
+    float attenuation = light_intensity /
+        (1.0 + attenuation_quadratic * distance_to_light * distance_to_light);
+
+    float diffuse_factor = max(dot(normal, light_dir), 0.0);
+    vec3 diffuse = albedo * u_material_diffuse * light_color *
+        diffuse_factor * u_diffuse_strength;
+
+    float specular_factor = pow(
+        max(dot(normal, halfway_dir), 0.0),
+        u_material_shininess
+    );
+    vec3 specular = u_material_specular * light_color *
+        specular_factor * u_specular_strength;
+
+    return (diffuse + specular) * attenuation;
+}
 
 void main()
 {
@@ -93,35 +140,44 @@ void main()
     vec3 albedo = texel.rgb * u_tint;
     vec3 normal = normalize(v_world_normal);
 
-    vec3 color = u_material_emissive;
+    vec3 emissive = u_material_emissive;
+    if (u_emissive_region_enabled) {
+        float emissive_distance = length(v_world_position - u_emissive_region_center);
+        float emissive_mask = 1.0 - smoothstep(
+            u_emissive_region_radius * 0.45,
+            u_emissive_region_radius,
+            emissive_distance
+        );
+        emissive *= emissive_mask;
+    }
+
+    vec3 color = emissive;
 
     if (u_ambient_enabled) {
         color += albedo * u_material_ambient * u_ambient_color * u_ambient_strength;
     }
 
-    if (u_external_light_enabled && u_receives_external_light) {
-        vec3 to_light = u_external_light_position - v_world_position;
-        float distance_to_light = length(to_light);
-        vec3 light_dir = normalize(to_light);
-        vec3 view_dir = normalize(u_camera_position - v_world_position);
-        vec3 halfway_dir = normalize(light_dir + view_dir);
+    color += point_light(
+        u_external_light_enabled,
+        u_receives_external_light,
+        u_external_light_position,
+        u_external_light_color,
+        u_external_light_intensity,
+        0.0015,
+        albedo,
+        normal
+    );
 
-        float attenuation = u_external_light_intensity /
-            (1.0 + 0.0015 * distance_to_light * distance_to_light);
-
-        float diffuse_factor = max(dot(normal, light_dir), 0.0);
-        vec3 diffuse = albedo * u_material_diffuse * u_external_light_color *
-            diffuse_factor * u_diffuse_strength;
-
-        float specular_factor = pow(
-            max(dot(normal, halfway_dir), 0.0),
-            u_material_shininess
-        );
-        vec3 specular = u_material_specular * u_external_light_color *
-            specular_factor * u_specular_strength;
-
-        color += (diffuse + specular) * attenuation;
-    }
+    color += point_light(
+        u_internal_light_enabled,
+        u_receives_internal_light,
+        u_internal_light_position,
+        u_internal_light_color,
+        u_internal_light_intensity,
+        0.28,
+        albedo,
+        normal
+    );
 
     frag_color = vec4(color, texel.a);
 }
@@ -159,6 +215,11 @@ class ShaderProgram:
             "u_external_light_position": glGetUniformLocation(self.program, "u_external_light_position"),
             "u_external_light_color": glGetUniformLocation(self.program, "u_external_light_color"),
             "u_external_light_intensity": glGetUniformLocation(self.program, "u_external_light_intensity"),
+            "u_internal_light_enabled": glGetUniformLocation(self.program, "u_internal_light_enabled"),
+            "u_receives_internal_light": glGetUniformLocation(self.program, "u_receives_internal_light"),
+            "u_internal_light_position": glGetUniformLocation(self.program, "u_internal_light_position"),
+            "u_internal_light_color": glGetUniformLocation(self.program, "u_internal_light_color"),
+            "u_internal_light_intensity": glGetUniformLocation(self.program, "u_internal_light_intensity"),
             "u_diffuse_strength": glGetUniformLocation(self.program, "u_diffuse_strength"),
             "u_specular_strength": glGetUniformLocation(self.program, "u_specular_strength"),
             "u_material_ambient": glGetUniformLocation(self.program, "u_material_ambient"),
@@ -166,6 +227,9 @@ class ShaderProgram:
             "u_material_specular": glGetUniformLocation(self.program, "u_material_specular"),
             "u_material_shininess": glGetUniformLocation(self.program, "u_material_shininess"),
             "u_material_emissive": glGetUniformLocation(self.program, "u_material_emissive"),
+            "u_emissive_region_enabled": glGetUniformLocation(self.program, "u_emissive_region_enabled"),
+            "u_emissive_region_center": glGetUniformLocation(self.program, "u_emissive_region_center"),
+            "u_emissive_region_radius": glGetUniformLocation(self.program, "u_emissive_region_radius"),
         }
 
     @staticmethod

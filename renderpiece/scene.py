@@ -10,6 +10,8 @@ nao recebem essa fonte. Cada objeto tem perfil proprio de reflexao difusa e
 especular, independente dos parametros vindos dos arquivos `.mtl`.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Callable
 import numpy as np
@@ -35,7 +37,11 @@ class SceneObject:
     model_factory: Callable[[float], np.ndarray]
     lighting: LightingProfile
     receives_external_light: bool
+    receives_internal_light: bool = False
     external_light_source: bool = False
+    internal_light_source: bool = False
+    emissive_region_local_position: tuple[float, float, float] | None = None
+    emissive_region_local_radius: float = 0.0
 
     def model_matrix(self, elapsed: float) -> np.ndarray:
         return self.model_factory(elapsed) @ self.mesh.anchor_to_base
@@ -45,6 +51,24 @@ class SceneObject:
             return self.lighting.emissive_off
         return self.lighting.emissive
 
+    def emissive_region(self, elapsed: float) -> tuple[tuple[float, float, float], float] | None:
+        if self.emissive_region_local_position is None or self.emissive_region_local_radius <= 0.0:
+            return None
+
+        matrix = self.model_matrix(elapsed)
+        center = matrix @ np.array([*self.emissive_region_local_position, 1.0], dtype=np.float32)
+        edge = matrix @ np.array(
+            [
+                self.emissive_region_local_position[0] + self.emissive_region_local_radius,
+                self.emissive_region_local_position[1],
+                self.emissive_region_local_position[2],
+                1.0,
+            ],
+            dtype=np.float32,
+        )
+        radius = float(np.linalg.norm(edge[:3] - center[:3]))
+        return (float(center[0]), float(center[1]), float(center[2])), radius
+
 
 def static_object(
     mesh: GpuMesh,
@@ -52,8 +76,22 @@ def static_object(
     name: str,
     lighting: LightingProfile,
     receives_external_light: bool,
+    receives_internal_light: bool = False,
+    internal_light_source: bool = False,
+    emissive_region_local_position: tuple[float, float, float] | None = None,
+    emissive_region_local_radius: float = 0.0,
 ) -> SceneObject:
-    return SceneObject(name, mesh, lambda _elapsed, m=matrix: m, lighting, receives_external_light)
+    return SceneObject(
+        name,
+        mesh,
+        lambda _elapsed, m=matrix: m,
+        lighting,
+        receives_external_light,
+        receives_internal_light=receives_internal_light,
+        internal_light_source=internal_light_source,
+        emissive_region_local_position=emissive_region_local_position,
+        emissive_region_local_radius=emissive_region_local_radius,
+    )
 
 
 SHIP_LIGHTING = LightingProfile(
@@ -116,6 +154,29 @@ CHOPPER_LIGHTING = LightingProfile(
     specular=(0.20, 0.16, 0.16),
     shininess=20.0,
 )
+FIREFLY_LIGHTING = LightingProfile(
+    ambient=(0.66, 0.60, 0.46),
+    diffuse=(0.82, 0.74, 0.52),
+    specular=(0.28, 0.24, 0.16),
+    shininess=24.0,
+)
+FIREFLY_TAIL_LOCAL_POSITION = (0.0, -0.0053, 0.0032)
+FIREFLY_TAIL_LOCAL_RADIUS = 0.0078
+FIREFLY_SWARM_CENTER = (-0.18, 9.20, -7.20)
+FIREFLY_SWARM_SPECS = [
+    ((0.00, 0.00, 0.00), 6.5, -30.0, 0.0),
+    ((-0.14, 0.10, 0.12), 5.8, 20.0, 0.7),
+    ((0.28, 0.14, -0.10), 6.2, -65.0, 1.3),
+    ((-0.22, 0.30, -0.16), 5.5, 80.0, 2.1),
+    ((0.45, 0.28, 0.06), 5.9, -115.0, 2.8),
+    ((-0.06, 0.42, 0.24), 5.2, 135.0, 3.6),
+    ((0.16, -0.12, -0.24), 6.0, -10.0, 4.2),
+    ((-0.24, -0.06, -0.30), 5.4, 55.0, 5.0),
+    ((0.52, 0.02, -0.26), 5.6, -145.0, 5.8),
+    ((-0.06, 0.24, -0.46), 5.1, 165.0, 6.4),
+    ((0.32, 0.48, 0.22), 5.0, -85.0, 7.1),
+    ((-0.18, 0.52, 0.02), 5.3, 105.0, 7.8),
+]
 SUN_LIGHTING = LightingProfile(
     ambient=(1.00, 0.72, 0.30),
     diffuse=(1.00, 0.86, 0.36),
@@ -218,6 +279,64 @@ def load_tony_chopper(textures: TextureCache) -> GpuMesh:
     )
 
 
+def load_firefly(textures: TextureCache) -> GpuMesh:
+    mesh = load_obj_mesh(
+        "Firefly",
+        ASSET_ROOT / "firefly/source/firefly.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+    tail_material = mesh.materials.get("Material.003")
+    if tail_material is not None:
+        tail_material.emissive = (2.75, 2.45, 0.38)
+    return mesh
+
+
+def make_firefly_swarm(firefly: GpuMesh) -> list[SceneObject]:
+    swarm: list[SceneObject] = []
+    for index, (offset, firefly_scale, base_yaw, phase) in enumerate(FIREFLY_SWARM_SPECS, start=1):
+        def model_factory(
+            elapsed: float,
+            offset: tuple[float, float, float] = offset,
+            firefly_scale: float = firefly_scale,
+            base_yaw: float = base_yaw,
+            phase: float = phase,
+        ) -> np.ndarray:
+            sway_x = 0.055 * np.sin(elapsed * 0.95 + phase * 1.7)
+            bob_y = 0.075 * np.sin(elapsed * 1.45 + phase)
+            sway_z = 0.050 * np.cos(elapsed * 1.05 + phase * 1.3)
+            position = (
+                FIREFLY_SWARM_CENTER[0] + offset[0] + sway_x,
+                FIREFLY_SWARM_CENTER[1] + offset[1] + bob_y,
+                FIREFLY_SWARM_CENTER[2] + offset[2] + sway_z,
+            )
+            return compose_transform(
+                position,
+                rotation=(
+                    6.0 * np.sin(elapsed * 1.25 + phase),
+                    base_yaw + 12.0 * np.sin(elapsed * 0.75 + phase),
+                    5.0 * np.cos(elapsed * 1.10 + phase),
+                ),
+                object_scale=firefly_scale,
+            )
+
+        swarm.append(
+            SceneObject(
+                f"Firefly swarm {index}",
+                firefly,
+                model_factory,
+                FIREFLY_LIGHTING,
+                False,
+                receives_internal_light=True,
+                internal_light_source=True,
+                emissive_region_local_position=FIREFLY_TAIL_LOCAL_POSITION,
+                emissive_region_local_radius=FIREFLY_TAIL_LOCAL_RADIUS,
+            )
+        )
+    return swarm
+
+
 def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
     table_dir = ASSET_ROOT / "wooden-table"
     table_texture = table_dir / "textures/desk_UV02_desk_BaseColor.png"
@@ -268,6 +387,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
     brook = load_brook(textures)
     old_wooden_table = load_old_wooden_table(textures)
     tony_chopper = load_tony_chopper(textures)
+    firefly = load_firefly(textures)
     sun = load_sun(textures)
 
     # bitcoin_pile e instanciado varias vezes para encher o tesouro do navio;
@@ -422,6 +542,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             "Bed",
             BED_LIGHTING,
             False,
+            receives_internal_light=True,
         ),
         static_object(
             barrel,
@@ -450,6 +571,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             "Old wooden table",
             TABLE_LIGHTING,
             False,
+            receives_internal_light=True,
         ),
         static_object(
             tony_chopper,
@@ -457,5 +579,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             "Tony Chopper next to desk",
             CHOPPER_LIGHTING,
             False,
+            receives_internal_light=True,
         ),
+        *make_firefly_swarm(firefly),
     ]
