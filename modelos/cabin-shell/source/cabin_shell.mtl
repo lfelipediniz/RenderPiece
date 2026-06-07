@@ -1,0 +1,8 @@
+# Hollow cabin shell material.
+
+newmtl cabin_wood
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.120000 0.100000 0.080000
+Ns 18.000000
+map_Kd ../../wooden-table/textures/desk_UV02_desk_BaseColor.png

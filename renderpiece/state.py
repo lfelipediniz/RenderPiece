@@ -9,6 +9,7 @@ class Toggles:
     wireframe: bool = False
     paused: bool = False
     muted: bool = False
+    show_cabin_debug_volume: bool = False
 
 
 @dataclass

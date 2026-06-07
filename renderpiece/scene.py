@@ -3,7 +3,7 @@
 Cada `load_*` carrega um `.obj` distinto via `load_obj_mesh` (req 4) e
 `build_scene` posiciona os modelos com `compose_transform`, separando o
 ambiente externo (proa/conves do Going Merry sobre o oceano) do interno
-(cabine: cama, mesa, Chopper).
+(cabine oca: cama, mesa, Chopper, vagalumes e lamp).
 
 Projeto 3: objetos externos recebem somente a fonte de luz do sol; objetos
 internos recebem somente as fontes da cabine (vagalumes e lamp). Cada objeto
@@ -160,6 +160,12 @@ TABLE_LIGHTING = LightingProfile(
     specular=(0.18, 0.13, 0.08),
     shininess=16.0,
 )
+CABIN_LIGHTING = LightingProfile(
+    ambient=(0.56, 0.42, 0.30),
+    diffuse=(0.68, 0.48, 0.32),
+    specular=(0.12, 0.10, 0.08),
+    shininess=14.0,
+)
 LAMP_LIGHTING = LightingProfile(
     ambient=(0.72, 0.63, 0.48),
     diffuse=(0.88, 0.78, 0.58),
@@ -197,6 +203,11 @@ FIREFLY_SWARM_SPECS = [
 ]
 LAMP_BULB_LOCAL_POSITION = (1.95, 5.25, 0.0)
 LAMP_BULB_LOCAL_RADIUS = 2.05
+CABIN_LIGHT_VOLUME_MIN = (-3.05, 7.65, -8.85)
+CABIN_LIGHT_VOLUME_MAX = (3.05, 10.95, -5.05)
+CABIN_SHELL_OBJECT_NAME = "Internal cabin shell"
+CABIN_SHELL_POSITION = (0.0, 7.72, -6.95)
+CABIN_SHELL_SCALE = (1.14, 0.99, 0.83)
 SUN_LIGHTING = LightingProfile(
     ambient=(1.00, 0.72, 0.30),
     diffuse=(1.00, 0.86, 0.36),
@@ -384,6 +395,21 @@ def load_old_wooden_table(textures: TextureCache) -> GpuMesh:
     )
 
 
+def load_cabin_shell(textures: TextureCache) -> GpuMesh:
+    mesh = load_obj_mesh(
+        "Internal cabin shell",
+        ASSET_ROOT / "cabin-shell/source/cabin_shell.obj",
+        textures,
+        fallback_diffuse=(1.0, 1.0, 1.0),
+        force_white_diffuse_when_textured=True,
+    )
+    for material in mesh.materials.values():
+        material.diffuse = (1.0, 0.0, 0.0)
+        material.emissive = (0.30, 0.0, 0.0)
+        material.texture_id = textures.white_texture
+    return mesh
+
+
 def load_barrel(textures: TextureCache) -> GpuMesh:
     barrel_texture = (
         ASSET_ROOT
@@ -424,6 +450,7 @@ def build_scene(
     barrel = load_barrel(textures)
     brook = load_brook(textures)
     old_wooden_table = load_old_wooden_table(textures)
+    cabin_shell = load_cabin_shell(textures)
     tony_chopper = load_tony_chopper(textures)
     firefly = load_firefly(textures)
     lamp = load_lamp(textures)
@@ -451,6 +478,18 @@ def build_scene(
             "Ship",
             SHIP_LIGHTING,
             True,
+        ),
+        static_object(
+            cabin_shell,
+            compose_transform(
+                CABIN_SHELL_POSITION,
+                rotation=(0.0, 0.0, 0.0),
+                object_scale=CABIN_SHELL_SCALE,
+            ),
+            CABIN_SHELL_OBJECT_NAME,
+            CABIN_LIGHTING,
+            False,
+            receives_internal_light=True,
         ),
         SceneObject(
             "Luffy on prow",

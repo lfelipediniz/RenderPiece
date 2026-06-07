@@ -3,7 +3,7 @@
 3D scene viewer built with OpenGL 3.3 (core profile) and Python.
 Renders a One Piece-themed environment: the Going Merry ship on the open sea, with crew members on deck and personal items inside the cabin.
 
-Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects; a small Firefly swarm and a table lamp are internal light sources and only affect cabin objects.
+Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects; a hollow cabin shell, a small Firefly swarm, and a table lamp form the internal environment and are lit only by internal light sources.
 
 ## Requirements
 
@@ -72,6 +72,7 @@ These commands control the independent light switches and lighting coefficients 
 | `L` | External sun light | Toggle on / off |
 | `F` | Internal Firefly swarm light | Toggle on / off |
 | `O` | Internal table lamp light | Toggle on / off |
+| `H` | Internal cabin debug volume | Show / hide the red cabin volume used to separate internal lighting |
 | `I` | Ambient light | Toggle on / off |
 | `Z` / `X` | Ambient strength | Decrease / increase |
 | `C` / `V` | Diffuse reflection strength | Decrease / increase |
@@ -88,9 +89,12 @@ These commands control the independent light switches and lighting coefficients 
 
 ### Projeto 3 - Etapa interna
 
+- `modelos/cabin-shell/source/cabin_shell.obj` is a hollow cuboid placed over the cabin area to represent the internal room separately from the ship mesh.
+- The cabin shell is invisible by default. Press `H` to show it as a solid red debug volume during presentation.
+- The same cabin bounds are sent to the fragment shader as an internal light volume. Ship fragments inside that volume ignore the external sun light and can receive the internal Firefly/lamp lights.
 - `modelos/firefly/source/firefly.obj` is instanced as a small swarm floating around Chopper's head inside the cabin.
 - Only the abdomen tip of each Firefly is emissive, using an emissive mask around the tail material instead of lighting the whole model.
 - `modelos/lamp/source/lamp.obj` is rendered on top of the old wooden table.
 - The upper bulb/shade region of the lamp is emissive, using an emissive mask so the base does not glow.
 - The swarm emits a green-yellow internal point light toggled with `F`; the table lamp emits a warm internal point light toggled with `O`.
-- Both internal lights affect only cabin objects marked as internal: bed, old wooden table, Chopper, the Fireflies, and the lamp.
+- Both internal lights affect only cabin objects marked as internal: cabin shell, bed, old wooden table, Chopper, the Fireflies, and the lamp.

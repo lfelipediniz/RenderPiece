@@ -100,7 +100,18 @@ uniform bool u_emissive_region_enabled;
 uniform vec3 u_emissive_region_center;
 uniform float u_emissive_region_radius;
 
+uniform bool u_internal_cabin_volume_enabled;
+uniform vec3 u_internal_cabin_min;
+uniform vec3 u_internal_cabin_max;
+
 out vec4 frag_color;
+
+bool inside_internal_cabin()
+{
+    return u_internal_cabin_volume_enabled &&
+        all(greaterThanEqual(v_world_position, u_internal_cabin_min)) &&
+        all(lessThanEqual(v_world_position, u_internal_cabin_max));
+}
 
 vec3 point_light(
     bool enabled,
@@ -144,6 +155,9 @@ void main()
     vec4 texel = texture(u_texture, v_texcoord);
     vec3 albedo = texel.rgb * u_tint;
     vec3 normal = normalize(v_world_normal);
+    bool cabin_fragment = inside_internal_cabin();
+    bool receives_external_light = u_receives_external_light && !cabin_fragment;
+    bool receives_internal_light = u_receives_internal_light || cabin_fragment;
 
     vec3 emissive = u_material_emissive;
     if (u_emissive_region_enabled) {
@@ -164,7 +178,7 @@ void main()
 
     color += point_light(
         u_external_light_enabled,
-        u_receives_external_light,
+        receives_external_light,
         u_external_light_position,
         u_external_light_color,
         u_external_light_intensity,
@@ -175,7 +189,7 @@ void main()
 
     color += point_light(
         u_firefly_light_enabled,
-        u_receives_internal_light,
+        receives_internal_light,
         u_firefly_light_position,
         u_firefly_light_color,
         u_firefly_light_intensity,
@@ -186,7 +200,7 @@ void main()
 
     color += point_light(
         u_lamp_light_enabled,
-        u_receives_internal_light,
+        receives_internal_light,
         u_lamp_light_position,
         u_lamp_light_color,
         u_lamp_light_intensity,
@@ -250,6 +264,11 @@ class ShaderProgram:
             "u_emissive_region_enabled": glGetUniformLocation(self.program, "u_emissive_region_enabled"),
             "u_emissive_region_center": glGetUniformLocation(self.program, "u_emissive_region_center"),
             "u_emissive_region_radius": glGetUniformLocation(self.program, "u_emissive_region_radius"),
+            "u_internal_cabin_volume_enabled": glGetUniformLocation(
+                self.program, "u_internal_cabin_volume_enabled"
+            ),
+            "u_internal_cabin_min": glGetUniformLocation(self.program, "u_internal_cabin_min"),
+            "u_internal_cabin_max": glGetUniformLocation(self.program, "u_internal_cabin_max"),
         }
 
     @staticmethod

@@ -22,6 +22,7 @@ projeto. A organizacao padrao e:
 | Chopper | Personagem interno | `modelos/chopper/source/chopper.obj` | Nao recebe a luz externa nesta etapa. |
 | Bed | Objeto interno | `modelos/bed/source/Bed.obj` | Nao recebe a luz externa nesta etapa. |
 | Old wooden table | Objeto interno | `modelos/wooden-table/source/desk_UV02.obj` | Nao recebe a luz externa nesta etapa. |
+| Cabin shell | Volume de luz interno | `modelos/cabin-shell/source/cabin_shell.obj` | Cuboide oco invisivel por padrao; `H` mostra ele em vermelho para demonstrar a separacao entre sol externo e luzes internas. |
 | Firefly | Fonte de luz interna | `modelos/firefly/source/firefly.obj` | Instanciado como enxame pequeno ao redor da cabeca do Chopper; a ponta do abdomen emite luz interna controlada por `F`. |
 | Lamp | Fonte de luz interna | `modelos/lamp/source/lamp.obj` | Fica em cima da mesa de madeira; a regiao da cupula/bulbo emite luz quente controlada por `O`. |
 | Barrel | Objeto externo | `modelos/barrel/source/Barril.obj` | `Barril.mtl` aponta para a textura de madeira. |

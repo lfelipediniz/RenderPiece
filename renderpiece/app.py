@@ -11,6 +11,7 @@ Mapa de teclas:
   L -> liga/desliga fonte externa (sol); I -> liga/desliga luz ambiente
   F -> liga/desliga fonte interna do Firefly
   O -> liga/desliga fonte interna da lamp
+  H -> mostra/esconde o volume vermelho da cabine
   Z/X -> decrementa/incrementa ambiente
   C/V -> decrementa/incrementa reflexao difusa
   B/N -> decrementa/incrementa reflexao especular
@@ -60,7 +61,12 @@ from .lighting import (
 from .math3d import normalize, perspective
 from .ocean import Ocean
 from .overlay import MutedIndicator, PauseOverlay
-from .scene import build_scene
+from .scene import (
+    CABIN_LIGHT_VOLUME_MAX,
+    CABIN_LIGHT_VOLUME_MIN,
+    CABIN_SHELL_OBJECT_NAME,
+    build_scene,
+)
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
 from .state import Toggles, UserTransforms
@@ -189,6 +195,10 @@ def upload_lighting_uniforms(
     glUniform3f(shader.uniforms["u_lamp_light_color"], *LAMP_LIGHT_COLOR)
     glUniform1f(shader.uniforms["u_lamp_light_intensity"], LAMP_LIGHT_INTENSITY)
 
+    glUniform1i(shader.uniforms["u_internal_cabin_volume_enabled"], 1)
+    glUniform3f(shader.uniforms["u_internal_cabin_min"], *CABIN_LIGHT_VOLUME_MIN)
+    glUniform3f(shader.uniforms["u_internal_cabin_max"], *CABIN_LIGHT_VOLUME_MAX)
+
     glUniform1f(shader.uniforms["u_diffuse_strength"], lighting.diffuse_strength)
     glUniform1f(shader.uniforms["u_specular_strength"], lighting.specular_strength)
 
@@ -210,6 +220,12 @@ def average_emissive_position(scene_objects, elapsed: float) -> np.ndarray:
         return np.zeros(3, dtype=np.float32)
 
     return np.mean(np.stack(positions), axis=0).astype(np.float32)
+
+
+def should_draw_scene_object(scene_object, toggles: Toggles) -> bool:
+    if scene_object.name == CABIN_SHELL_OBJECT_NAME:
+        return toggles.show_cabin_debug_volume
+    return True
 
 
 def init_window() -> glfw._GLFWwindow:
@@ -281,6 +297,9 @@ def run() -> None:
         elif key == glfw.KEY_O:
             lighting.lamp_light_enabled = not lighting.lamp_light_enabled
             print(f"[input] Lamp internal light: {lighting.lamp_light_enabled}")
+        elif key == glfw.KEY_H:
+            toggles.show_cabin_debug_volume = not toggles.show_cabin_debug_volume
+            print(f"[input] Cabin debug volume: {toggles.show_cabin_debug_volume}")
 
     glfw.set_cursor_pos_callback(window, mouse_callback)
     glfw.set_key_callback(window, key_callback)
@@ -335,6 +354,8 @@ def run() -> None:
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE if toggles.wireframe else GL_FILL)
 
         for scene_object in objects:
+            if not should_draw_scene_object(scene_object, toggles):
+                continue
             scene_object.mesh.draw(
                 shader,
                 scene_object.model_matrix(animation_time),
