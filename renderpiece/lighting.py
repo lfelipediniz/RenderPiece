@@ -16,9 +16,18 @@ SUN_MODEL_SCALE = 2.20
 SUN_RADIUS = 4.157928 * SUN_MODEL_SCALE
 SUN_ORBIT_RADIUS = 130.0
 SUN_BASE_HEIGHT = 150.0
+
+AMBIENT_LIGHT_COLOR = (0.95, 0.98, 1.00)
+EXTERNAL_LIGHT_COLOR = (1.00, 0.86, 0.54)
+FIREFLY_LIGHT_COLOR = (0.78, 1.00, 0.34)
+LAMP_LIGHT_COLOR = (1.00, 0.78, 0.42)
+
 EXTERNAL_LIGHT_INTENSITY = 120.0
 FIREFLY_LIGHT_INTENSITY = 4.75
 LAMP_LIGHT_INTENSITY = 5.60
+
+FIREFLY_LIGHT_KEY = "firefly"
+LAMP_LIGHT_KEY = "lamp"
 
 
 @dataclass(frozen=True)
@@ -53,6 +62,14 @@ class LightingState:
 
     def translate_sun(self, delta_angle: float) -> None:
         self.sun_orbit_angle = (self.sun_orbit_angle + delta_angle) % (2.0 * np.pi)
+
+
+def internal_light_enabled(lighting: LightingState, light_name: str | None) -> bool:
+    if light_name == FIREFLY_LIGHT_KEY:
+        return lighting.firefly_light_enabled
+    if light_name == LAMP_LIGHT_KEY:
+        return lighting.lamp_light_enabled
+    return True
 
 
 def _clamp(value: float, minimum: float, maximum: float) -> float:

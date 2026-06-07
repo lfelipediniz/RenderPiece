@@ -76,11 +76,11 @@ uniform vec3 u_external_light_position;
 uniform vec3 u_external_light_color;
 uniform float u_external_light_intensity;
 
-uniform bool u_internal_light_enabled;
 uniform bool u_receives_internal_light;
-uniform vec3 u_internal_light_position;
-uniform vec3 u_internal_light_color;
-uniform float u_internal_light_intensity;
+uniform bool u_firefly_light_enabled;
+uniform vec3 u_firefly_light_position;
+uniform vec3 u_firefly_light_color;
+uniform float u_firefly_light_intensity;
 
 uniform bool u_lamp_light_enabled;
 uniform vec3 u_lamp_light_position;
@@ -174,11 +174,11 @@ void main()
     );
 
     color += point_light(
-        u_internal_light_enabled,
+        u_firefly_light_enabled,
         u_receives_internal_light,
-        u_internal_light_position,
-        u_internal_light_color,
-        u_internal_light_intensity,
+        u_firefly_light_position,
+        u_firefly_light_color,
+        u_firefly_light_intensity,
         0.28,
         albedo,
         normal
@@ -231,11 +231,11 @@ class ShaderProgram:
             "u_external_light_position": glGetUniformLocation(self.program, "u_external_light_position"),
             "u_external_light_color": glGetUniformLocation(self.program, "u_external_light_color"),
             "u_external_light_intensity": glGetUniformLocation(self.program, "u_external_light_intensity"),
-            "u_internal_light_enabled": glGetUniformLocation(self.program, "u_internal_light_enabled"),
             "u_receives_internal_light": glGetUniformLocation(self.program, "u_receives_internal_light"),
-            "u_internal_light_position": glGetUniformLocation(self.program, "u_internal_light_position"),
-            "u_internal_light_color": glGetUniformLocation(self.program, "u_internal_light_color"),
-            "u_internal_light_intensity": glGetUniformLocation(self.program, "u_internal_light_intensity"),
+            "u_firefly_light_enabled": glGetUniformLocation(self.program, "u_firefly_light_enabled"),
+            "u_firefly_light_position": glGetUniformLocation(self.program, "u_firefly_light_position"),
+            "u_firefly_light_color": glGetUniformLocation(self.program, "u_firefly_light_color"),
+            "u_firefly_light_intensity": glGetUniformLocation(self.program, "u_firefly_light_intensity"),
             "u_lamp_light_enabled": glGetUniformLocation(self.program, "u_lamp_light_enabled"),
             "u_lamp_light_position": glGetUniformLocation(self.program, "u_lamp_light_position"),
             "u_lamp_light_color": glGetUniformLocation(self.program, "u_lamp_light_color"),

@@ -1,13 +1,14 @@
-"""Montagem da cena One Piece (Projeto 2 + primeira etapa do Projeto 3).
+"""Montagem da cena One Piece (Projeto 2 + Projeto 3).
 
 Cada `load_*` carrega um `.obj` distinto via `load_obj_mesh` (req 4) e
 `build_scene` posiciona os modelos com `compose_transform`, separando o
 ambiente externo (proa/conves do Going Merry sobre o oceano) do interno
 (cabine: cama, mesa, Chopper).
 
-Projeto 3: objetos externos recebem a fonte de luz do sol; objetos internos
-nao recebem essa fonte. Cada objeto tem perfil proprio de reflexao difusa e
-especular, independente dos parametros vindos dos arquivos `.mtl`.
+Projeto 3: objetos externos recebem somente a fonte de luz do sol; objetos
+internos recebem somente as fontes da cabine (vagalumes e lamp). Cada objeto
+tem perfil proprio de reflexao difusa e especular, independente dos parametros
+vindos dos arquivos `.mtl`.
 """
 
 from __future__ import annotations
@@ -16,7 +17,14 @@ from dataclasses import dataclass
 from typing import Callable
 import numpy as np
 from .config import ASSET_ROOT
-from .lighting import LightingProfile, LightingState, SUN_MODEL_SCALE, sun_base_position
+from .lighting import (
+    FIREFLY_LIGHT_KEY,
+    LAMP_LIGHT_KEY,
+    LightingProfile,
+    LightingState,
+    SUN_MODEL_SCALE,
+    sun_base_position,
+)
 from .math3d import compose_transform
 from .mesh import GpuMesh
 from .obj_loader import load_obj_mesh
@@ -279,7 +287,6 @@ def load_brook(textures: TextureCache) -> GpuMesh:
     )
 
 
-
 def load_tony_chopper(textures: TextureCache) -> GpuMesh:
     return load_obj_mesh(
         "Tony Tony Chopper",
@@ -355,7 +362,7 @@ def make_firefly_swarm(firefly: GpuMesh) -> list[SceneObject]:
                 False,
                 receives_internal_light=True,
                 internal_light_source=True,
-                internal_light_name="firefly",
+                internal_light_name=FIREFLY_LIGHT_KEY,
                 emissive_region_local_position=FIREFLY_TAIL_LOCAL_POSITION,
                 emissive_region_local_radius=FIREFLY_TAIL_LOCAL_RADIUS,
             )
@@ -608,7 +615,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             False,
             receives_internal_light=True,
             internal_light_source=True,
-            internal_light_name="lamp",
+            internal_light_name=LAMP_LIGHT_KEY,
             emissive_region_local_position=LAMP_BULB_LOCAL_POSITION,
             emissive_region_local_radius=LAMP_BULB_LOCAL_RADIUS,
         ),

@@ -43,10 +43,17 @@ from .audio import BackgroundMusic
 from .camera import Camera
 from .config import ASSET_ROOT, OCEAN_Y, WINDOW_HEIGHT, WINDOW_WIDTH
 from .lighting import (
+    AMBIENT_LIGHT_COLOR,
     EXTERNAL_LIGHT_INTENSITY,
+    EXTERNAL_LIGHT_COLOR,
+    FIREFLY_LIGHT_COLOR,
     FIREFLY_LIGHT_INTENSITY,
+    FIREFLY_LIGHT_KEY,
+    LAMP_LIGHT_COLOR,
     LAMP_LIGHT_INTENSITY,
+    LAMP_LIGHT_KEY,
     LightingState,
+    internal_light_enabled,
     sun_light_position,
 )
 from .math3d import normalize, perspective
@@ -121,22 +128,22 @@ def upload_lighting_uniforms(
     glUniform3f(shader.uniforms["u_camera_position"], *camera_position)
 
     glUniform1i(shader.uniforms["u_ambient_enabled"], int(lighting.ambient_enabled))
-    glUniform3f(shader.uniforms["u_ambient_color"], 0.95, 0.98, 1.00)
+    glUniform3f(shader.uniforms["u_ambient_color"], *AMBIENT_LIGHT_COLOR)
     glUniform1f(shader.uniforms["u_ambient_strength"], lighting.ambient_strength)
 
     glUniform1i(shader.uniforms["u_external_light_enabled"], int(lighting.external_light_enabled))
     glUniform3f(shader.uniforms["u_external_light_position"], *external_light_position)
-    glUniform3f(shader.uniforms["u_external_light_color"], 1.00, 0.86, 0.54)
+    glUniform3f(shader.uniforms["u_external_light_color"], *EXTERNAL_LIGHT_COLOR)
     glUniform1f(shader.uniforms["u_external_light_intensity"], EXTERNAL_LIGHT_INTENSITY)
 
-    glUniform1i(shader.uniforms["u_internal_light_enabled"], int(lighting.firefly_light_enabled))
-    glUniform3f(shader.uniforms["u_internal_light_position"], *firefly_light_position)
-    glUniform3f(shader.uniforms["u_internal_light_color"], 0.78, 1.00, 0.34)
-    glUniform1f(shader.uniforms["u_internal_light_intensity"], FIREFLY_LIGHT_INTENSITY)
+    glUniform1i(shader.uniforms["u_firefly_light_enabled"], int(lighting.firefly_light_enabled))
+    glUniform3f(shader.uniforms["u_firefly_light_position"], *firefly_light_position)
+    glUniform3f(shader.uniforms["u_firefly_light_color"], *FIREFLY_LIGHT_COLOR)
+    glUniform1f(shader.uniforms["u_firefly_light_intensity"], FIREFLY_LIGHT_INTENSITY)
 
     glUniform1i(shader.uniforms["u_lamp_light_enabled"], int(lighting.lamp_light_enabled))
     glUniform3f(shader.uniforms["u_lamp_light_position"], *lamp_light_position)
-    glUniform3f(shader.uniforms["u_lamp_light_color"], 1.00, 0.78, 0.42)
+    glUniform3f(shader.uniforms["u_lamp_light_color"], *LAMP_LIGHT_COLOR)
     glUniform1f(shader.uniforms["u_lamp_light_intensity"], LAMP_LIGHT_INTENSITY)
 
     glUniform1f(shader.uniforms["u_diffuse_strength"], lighting.diffuse_strength)
@@ -144,11 +151,22 @@ def upload_lighting_uniforms(
 
 
 def object_emissive_scale(scene_object, lighting: LightingState) -> float:
-    if scene_object.internal_light_name == "firefly":
-        return 1.0 if lighting.firefly_light_enabled else 0.0
-    if scene_object.internal_light_name == "lamp":
-        return 1.0 if lighting.lamp_light_enabled else 0.0
-    return 1.0
+    if not scene_object.internal_light_source:
+        return 1.0
+    return 1.0 if internal_light_enabled(lighting, scene_object.internal_light_name) else 0.0
+
+
+def average_emissive_position(scene_objects, elapsed: float) -> np.ndarray:
+    positions = []
+    for scene_object in scene_objects:
+        emissive_region = scene_object.emissive_region(elapsed)
+        if emissive_region is not None:
+            positions.append(np.array(emissive_region[0], dtype=np.float32))
+
+    if not positions:
+        return np.zeros(3, dtype=np.float32)
+
+    return np.mean(np.stack(positions), axis=0).astype(np.float32)
 
 
 def init_window() -> glfw._GLFWwindow:
@@ -229,8 +247,8 @@ def run() -> None:
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
     objects = build_scene(textures, lighting)
-    firefly_light_source = next((obj for obj in objects if obj.internal_light_name == "firefly"), None)
-    lamp_light_source = next((obj for obj in objects if obj.internal_light_name == "lamp"), None)
+    firefly_light_sources = [obj for obj in objects if obj.internal_light_name == FIREFLY_LIGHT_KEY]
+    lamp_light_sources = [obj for obj in objects if obj.internal_light_name == LAMP_LIGHT_KEY]
     skybox = SkyBox()
     ocean = Ocean(surface_y=OCEAN_Y)
     pause_overlay = PauseOverlay(WINDOW_WIDTH, WINDOW_HEIGHT)
@@ -259,26 +277,8 @@ def run() -> None:
         glUniformMatrix4fv(shader.uniforms["u_view"], 1, GL_TRUE, view)
         glUniformMatrix4fv(shader.uniforms["u_projection"], 1, GL_TRUE, projection)
         external_light_position = sun_light_position(lighting.sun_orbit_angle)
-        firefly_emissive_region = (
-            firefly_light_source.emissive_region(animation_time)
-            if firefly_light_source is not None
-            else None
-        )
-        firefly_light_position = (
-            np.array(firefly_emissive_region[0], dtype=np.float32)
-            if firefly_emissive_region is not None
-            else np.zeros(3, dtype=np.float32)
-        )
-        lamp_emissive_region = (
-            lamp_light_source.emissive_region(animation_time)
-            if lamp_light_source is not None
-            else None
-        )
-        lamp_light_position = (
-            np.array(lamp_emissive_region[0], dtype=np.float32)
-            if lamp_emissive_region is not None
-            else np.zeros(3, dtype=np.float32)
-        )
+        firefly_light_position = average_emissive_position(firefly_light_sources, animation_time)
+        lamp_light_position = average_emissive_position(lamp_light_sources, animation_time)
         upload_lighting_uniforms(
             shader,
             lighting,
