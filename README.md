@@ -33,24 +33,50 @@ python main.py
 
 ## Controls
 
-| Key / Input  | Action                                                       |
-|--------------|--------------------------------------------------------------|
-| `W` `A` `S` `D` | Move camera (horizontal plane)                            |
-| `Space`      | Move camera up                                               |
-| `Left Shift` | Move camera down                                             |
-| Mouse        | Look around                                                  |
-| `P`          | Toggle wireframe mode                                        |
-| `R`          | Reset camera to starting position                            |
-| `M`          | Mute / unmute background music (red badge appears when muted)|
-| `ESC`        | Pause / unpause (also pauses music)                          |
-| `L`          | Toggle the external sun light                                |
-| `F`          | Toggle the internal Firefly light                            |
-| `O`          | Toggle the internal table lamp light                         |
-| `I`          | Toggle ambient light                                         |
-| `Z` / `X`    | Decrease / increase ambient light intensity                  |
-| `C` / `V`    | Decrease / increase diffuse reflection                       |
-| `B` / `N`    | Decrease / increase specular reflection                      |
-| `J` / `K`    | Translate the sun manually around the ship                   |
+### Global Controls
+
+These commands control navigation, viewing, audio, and app state.
+
+| Key / Input | Action |
+|-------------|--------|
+| `W` `A` `S` `D` | Move camera on the horizontal plane |
+| `Space` | Move camera up |
+| `Left Shift` | Move camera down |
+| Mouse | Look around |
+| `P` | Toggle wireframe mode |
+| `R` | Reset camera to starting position |
+| `M` | Mute / unmute background music |
+| `ESC` | Pause / unpause scene animation and music |
+
+### Projeto 2 Controls
+
+These controls were kept from Projeto 2 even though Projeto 3 no longer requires them. They demonstrate model transformations by keyboard: scale, rotation, and translation.
+
+| Key | Character | Transformation |
+|-----|-----------|----------------|
+| `1` | Luffy | Increase uniform scale, capped at `3.0x` |
+| `2` | Luffy | Decrease uniform scale, capped at `0.3x` |
+| `3` | Franky | Rotate around the Y axis counterclockwise |
+| `4` | Franky | Rotate around the Y axis clockwise |
+| `5` | Tony Tony Chopper | Translate on `+X`, capped at `+3.0` |
+| `6` | Tony Tony Chopper | Translate on `-X`, capped at `-3.0` |
+| `7` | Tony Tony Chopper | Translate on `+Z`, capped at `+3.0` |
+| `8` | Tony Tony Chopper | Translate on `-Z`, capped at `-3.0` |
+
+### Projeto 3 Controls
+
+These commands control the independent light switches and lighting coefficients required by Projeto 3.
+
+| Key | Light / Parameter | Action |
+|-----|-------------------|--------|
+| `L` | External sun light | Toggle on / off |
+| `F` | Internal Firefly swarm light | Toggle on / off |
+| `O` | Internal table lamp light | Toggle on / off |
+| `I` | Ambient light | Toggle on / off |
+| `Z` / `X` | Ambient strength | Decrease / increase |
+| `C` / `V` | Diffuse reflection strength | Decrease / increase |
+| `B` / `N` | Specular reflection strength | Decrease / increase |
+| `J` / `K` | Sun position | Translate the sun around the ship |
 
 ### Projeto 3 - Etapa externa
 

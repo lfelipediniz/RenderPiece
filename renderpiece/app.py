@@ -15,6 +15,7 @@ Mapa de teclas:
   C/V -> decrementa/incrementa reflexao difusa
   B/N -> decrementa/incrementa reflexao especular
   J/K -> translada o sol manualmente em torno do navio
+  1/2 -> escala Luffy; 3/4 -> rotaciona Franky; 5/6 e 7/8 -> translada Chopper
 """
 
 import math
@@ -62,11 +63,17 @@ from .overlay import MutedIndicator, PauseOverlay
 from .scene import build_scene
 from .shaders import FRAGMENT_SHADER, VERTEX_SHADER, ShaderProgram
 from .skybox import SkyBox
-from .state import Toggles
+from .state import Toggles, UserTransforms
 from .textures import TextureCache
 
 LIGHT_ADJUST_SPEED = 0.55
 SUN_TRANSLATION_SPEED = math.radians(38.0)
+LUFFY_SCALE_SPEED = 0.6
+LUFFY_SCALE_MIN = 0.3
+LUFFY_SCALE_MAX = 3.0
+FRANKY_ROTATION_SPEED = 120.0
+CHOPPER_MOVE_SPEED = 1.5
+CHOPPER_OFFSET_LIMIT = 3.0
 
 BACKGROUND_MUSIC_PATH = ASSET_ROOT / "audio/One Piece - Bink's Sake _ Piano [SeDyYtIuhsA].mp3"
 
@@ -79,6 +86,7 @@ def process_keyboard(
     window: glfw._GLFWwindow,
     camera: Camera,
     lighting: LightingState,
+    transforms: UserTransforms,
     dt: float,
 ) -> None:
     velocity = camera.speed * dt
@@ -115,6 +123,41 @@ def process_keyboard(
         lighting.translate_sun(-SUN_TRANSLATION_SPEED * dt)
     if glfw.get_key(window, glfw.KEY_K) == glfw.PRESS:
         lighting.translate_sun(SUN_TRANSLATION_SPEED * dt)
+
+    if glfw.get_key(window, glfw.KEY_1) == glfw.PRESS:
+        transforms.luffy_scale = min(
+            LUFFY_SCALE_MAX,
+            transforms.luffy_scale + LUFFY_SCALE_SPEED * dt,
+        )
+    if glfw.get_key(window, glfw.KEY_2) == glfw.PRESS:
+        transforms.luffy_scale = max(
+            LUFFY_SCALE_MIN,
+            transforms.luffy_scale - LUFFY_SCALE_SPEED * dt,
+        )
+    if glfw.get_key(window, glfw.KEY_3) == glfw.PRESS:
+        transforms.franky_rotation_y += FRANKY_ROTATION_SPEED * dt
+    if glfw.get_key(window, glfw.KEY_4) == glfw.PRESS:
+        transforms.franky_rotation_y -= FRANKY_ROTATION_SPEED * dt
+    if glfw.get_key(window, glfw.KEY_5) == glfw.PRESS:
+        transforms.chopper_offset_x = min(
+            CHOPPER_OFFSET_LIMIT,
+            transforms.chopper_offset_x + CHOPPER_MOVE_SPEED * dt,
+        )
+    if glfw.get_key(window, glfw.KEY_6) == glfw.PRESS:
+        transforms.chopper_offset_x = max(
+            -CHOPPER_OFFSET_LIMIT,
+            transforms.chopper_offset_x - CHOPPER_MOVE_SPEED * dt,
+        )
+    if glfw.get_key(window, glfw.KEY_7) == glfw.PRESS:
+        transforms.chopper_offset_z = min(
+            CHOPPER_OFFSET_LIMIT,
+            transforms.chopper_offset_z + CHOPPER_MOVE_SPEED * dt,
+        )
+    if glfw.get_key(window, glfw.KEY_8) == glfw.PRESS:
+        transforms.chopper_offset_z = max(
+            -CHOPPER_OFFSET_LIMIT,
+            transforms.chopper_offset_z - CHOPPER_MOVE_SPEED * dt,
+        )
 
 
 def upload_lighting_uniforms(
@@ -194,6 +237,7 @@ def run() -> None:
     camera = Camera()
     toggles = Toggles()
     lighting = LightingState()
+    transforms = UserTransforms()
     window = init_window()
     music = BackgroundMusic(BACKGROUND_MUSIC_PATH)
 
@@ -246,7 +290,7 @@ def run() -> None:
 
     shader = ShaderProgram(VERTEX_SHADER, FRAGMENT_SHADER)
     textures = TextureCache()
-    objects = build_scene(textures, lighting)
+    objects = build_scene(textures, lighting, transforms)
     firefly_light_sources = [obj for obj in objects if obj.internal_light_name == FIREFLY_LIGHT_KEY]
     lamp_light_sources = [obj for obj in objects if obj.internal_light_name == LAMP_LIGHT_KEY]
     skybox = SkyBox()
@@ -265,7 +309,7 @@ def run() -> None:
 
         if not toggles.paused:
             animation_time += dt
-            process_keyboard(window, camera, lighting, dt)
+            process_keyboard(window, camera, lighting, transforms, dt)
 
         width, height = glfw.get_framebuffer_size(window)
         aspect = width / max(height, 1)

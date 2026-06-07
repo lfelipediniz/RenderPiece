@@ -28,6 +28,7 @@ from .lighting import (
 from .math3d import compose_transform
 from .mesh import GpuMesh
 from .obj_loader import load_obj_mesh
+from .state import UserTransforms
 from .textures import TextureCache
 
 
@@ -409,7 +410,11 @@ def load_sun(textures: TextureCache) -> GpuMesh:
     )
 
 
-def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[SceneObject]:
+def build_scene(
+    textures: TextureCache,
+    lighting_state: LightingState,
+    transforms: UserTransforms,
+) -> list[SceneObject]:
     ship = load_ship(textures)
     luffy = load_luffy(textures)
     nami = load_nami(textures)
@@ -453,7 +458,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             lambda _elapsed: compose_transform(
                 (0.0, 11.92, 10.60),
                 rotation=(0.0, 0.0, 0.0),
-                object_scale=0.013,
+                object_scale=0.013 * transforms.luffy_scale,
             ),
             SKIN_LIGHTING,
             True,
@@ -585,10 +590,14 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             WOOD_LIGHTING,
             True,
         ),
-        static_object(
-            franky,
-            compose_transform((3.00, 5.90, -1.00), rotation=(0.0, -108.0, 0.0), object_scale=0.011),
+        SceneObject(
             "Franky",
+            franky,
+            lambda _elapsed: compose_transform(
+                (3.00, 5.90, -1.00),
+                rotation=(0.0, -108.0 + transforms.franky_rotation_y, 0.0),
+                object_scale=0.011,
+            ),
             FRANKY_LIGHTING,
             True,
         ),
@@ -609,7 +618,7 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
         ),
         static_object(
             lamp,
-            compose_transform((0.55, 9.29, -8.31), rotation=(0.0, -25.0, 0.0), object_scale=0.083),
+            compose_transform((0.78, 9.29, -8.38), rotation=(0.0, -25.0, 0.0), object_scale=0.045),
             "Lamp on wooden table",
             LAMP_LIGHTING,
             False,
@@ -619,10 +628,18 @@ def build_scene(textures: TextureCache, lighting_state: LightingState) -> list[S
             emissive_region_local_position=LAMP_BULB_LOCAL_POSITION,
             emissive_region_local_radius=LAMP_BULB_LOCAL_RADIUS,
         ),
-        static_object(
-            tony_chopper,
-            compose_transform((-1.00, 7.80, -7.50), rotation=(0.0, 45.0, 0.0), object_scale=0.02),
+        SceneObject(
             "Tony Chopper next to desk",
+            tony_chopper,
+            lambda _elapsed: compose_transform(
+                (
+                    -1.00 + transforms.chopper_offset_x,
+                    7.80,
+                    -7.50 + transforms.chopper_offset_z,
+                ),
+                rotation=(0.0, 45.0, 0.0),
+                object_scale=0.02,
+            ),
             CHOPPER_LIGHTING,
             False,
             receives_internal_light=True,
