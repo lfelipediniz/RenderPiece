@@ -5,6 +5,9 @@ Renders a One Piece-themed environment: the Going Merry ship on the open sea, wi
 
 Projeto 3: the external environment now uses ambient, diffuse, and specular lighting. The keyboard-controlled OBJ sun is the external light source and only affects external objects; a hollow cabin shell, a small Firefly swarm, and a table lamp form the internal environment and are lit only by internal light sources.
 
+## Authors 
+- Pedro Lucas Figueiredo Bahiense - 14675458
+- Luiz Felipe Diniz Costa - 13782032
 ## Requirements
 
 - Python 3.9+
